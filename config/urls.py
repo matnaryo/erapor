@@ -10,6 +10,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
+    path('akademik/', include('apps.master_akademik.urls')),
+    path('kurikulum/', include('apps.kurikulum.urls')),
 ]
 
 if settings.DEBUG:

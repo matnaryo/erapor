@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Data Murid{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  
+  <!-- Header Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-lg font-bold text-slate-800">Buku Induk & Data Murid</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+          {{ total_hasil }} Murid
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">Seluruh peserta didik aktif di SDIT Luqman Al Hakim Sleman</p>
+    </div>
+
+    <div>
+      <a href="{% url 'murid_create' %}" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>Tambah Murid Baru</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+    <form method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+      
+      <!-- Input Search -->
+      <div class="sm:col-span-6 relative">
+        <input type="text" name="q" value="{{ query }}" placeholder="Cari nama murid, NISN, atau NIS..."
+               class="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+        <div class="absolute left-3 top-2.5 text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+      </div>
+
+      <!-- Filter Kelas -->
+      <div class="sm:col-span-3">
+        <select name="kelas" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+          <option value="">Semua Rombel / Kelas</option>
+          {% for k in kelas_list %}
+            <option value="{{ k.id }}" {% if kelas_id == k.id|stringformat:"s" %}selected{% endif %}>Kelas {{ k.nama }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filter Gender -->
+      <div class="sm:col-span-2">
+        <select name="gender" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+          <option value="">Semua L/P</option>
+          <option value="L" {% if gender == 'L' %}selected{% endif %}>Laki-laki (L)</option>
+          <option value="P" {% if gender == 'P' %}selected{% endif %}>Perempuan (P)</option>
+        </select>
+      </div>
+
+      <!-- Tombol Filter -->
+      <div class="sm:col-span-1">
+        <button type="submit" class="w-full h-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center">
+          Filter
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-100/80 text-slate-700 font-semibold border-b border-slate-200">
+          <tr>
+            <th class="p-3.5 text-center w-12">No</th>
+            <th class="p-3.5 w-28">NISN / NIS</th>
+            <th class="p-3.5">Nama Lengkap Murid</th>
+            <th class="p-3.5 text-center w-16">L/P</th>
+            <th class="p-3.5 w-44">Tempat, Tanggal Lahir</th>
+            <th class="p-3.5 w-48">Alamat Domisili</th>
+            <th class="p-3.5 text-center w-32">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for murid in page_obj %}
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="p-3.5 text-center font-bold text-slate-500">{{ forloop.counter0|add:page_obj.start_index }}</td>
+              <td class="p-3.5 font-mono text-[11px]">
+                <div class="font-bold text-slate-800">{{ murid.nisn }}</div>
+                <div class="text-slate-400">NIS: {{ murid.nis }}</div>
+              </td>
+              <td class="p-3.5">
+                <a href="{% url 'murid_detail' murid.id %}" class="font-bold text-slate-900 hover:text-emerald-700 uppercase transition">
+                  {{ murid.nama_lengkap }}
+                </a>
+                <div class="text-[10px] text-slate-400 mt-0.5">Agama: {{ murid.agama }}</div>
+              </td>
+              <td class="p-3.5 text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if murid.jenis_kelamin == 'L' %}bg-blue-100 text-blue-700{% else %}bg-pink-100 text-pink-700{% endif %}">
+                  {{ murid.jenis_kelamin }}
+                </span>
+              </td>
+              <td class="p-3.5 text-slate-600">
+                <div>{{ murid.tempat_lahir }}</div>
+                <div class="text-[11px] text-slate-400">{{ murid.tanggal_lahir|date:"d M Y" }}</div>
+              </td>
+              <td class="p-3.5 text-slate-600 truncate max-w-xs" title="{{ murid.alamat_lengkap }}">
+                {{ murid.desa_kelurahan|default:murid.alamat_lengkap|truncatechars:35 }}
+              </td>
+              <td class="p-3.5 text-center">
+                <div class="inline-flex items-center gap-1.5">
+                  <a href="{% url 'murid_detail' murid.id %}" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-semibold transition">
+                    Lihat
+                  </a>
+                  <a href="{% url 'murid_update' murid.id %}" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition">
+                    Edit
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-400">
+                Tidak ada data murid yang sesuai kriteria pencarian.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginator -->
+    {% if page_obj.has_other_pages %}
+      <div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <div>
+          Halaman <strong>{{ page_obj.number }}</strong> dari <strong>{{ page_obj.paginator.num_pages }}</strong>
+        </div>
+        <div class="flex items-center gap-1">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&kelas={{ kelas_id }}&gender={{ gender }}" class="px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50">&larr; Sebelumnya</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&kelas={{ kelas_id }}&gender={{ gender }}" class="px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50">Berikutnya &rarr;</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Mata Pelajaran Resmi - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Struktur Kurikulum & Mata Pelajaran{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Info Banner -->
+    <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 rounded-xl p-6 text-white shadow-md">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 mb-2">
+                    SDIT Luqman Al Hakim Sleman
+                </span>
+                <h2 class="text-xl font-bold tracking-tight">11 Mata Pelajaran Resmi Kurikulum Merdeka Plus</h2>
+                <p class="text-xs text-emerald-100/80 mt-1 max-w-2xl leading-relaxed">
+                    Struktur kurikulum mencakup 8 Mata Pelajaran Umum, 2 Mata Pelajaran Pilihan Khas (Koding & AI, Bahasa Arab), serta 1 Muatan Lokal Wajib (Bahasa Jawa) yang dicetak pada Rapor eLHaEs.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'kktp_manage' %}" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors shadow">
+                    Kelola Rentang KKTP
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kelompok 1: Mata Pelajaran Umum (1-8) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">A. Kelompok Mata Pelajaran Umum (Wajib)</h3>
+                <p class="text-xs text-slate-500">Mata pelajaran nomor urut 1 sampai 8 pada format cetak rapor.</p>
+            </div>
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">8 Mupel</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-4 w-28">Kode</th>
+                        <th class="py-3 px-4">Nama Mata Pelajaran</th>
+                        <th class="py-3 px-4 w-32 text-center">Status</th>
+                        <th class="py-3 px-4 w-40 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for m in mupel_umum %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ m.urutan }}</td>
+                        <td class="py-3 px-4 font-mono text-xs font-bold text-emerald-700">{{ m.kode }}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ m.nama }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <a href="{% url 'tp_list' %}?mupel={{ m.id }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded transition-colors">
+                                Tujuan Pembelajaran
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada mupel umum.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Kelompok 2: Mata Pelajaran Pilihan Khas (9-10) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">B. Kelompok Mata Pelajaran Pilihan Khas Sekolah</h3>
+                <p class="text-xs text-slate-500">Mata pelajaran nomor urut 9 dan 10 pada format cetak rapor.</p>
+            </div>
+            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">2 Mupel</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-4 w-28">Kode</th>
+                        <th class="py-3 px-4">Nama Mata Pelajaran</th>
+                        <th class="py-3 px-4 w-32 text-center">Status</th>
+                        <th class="py-3 px-4 w-40 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for m in mupel_pilihan %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ m.urutan }}</td>
+                        <td class="py-3 px-4 font-mono text-xs font-bold text-blue-700">{{ m.kode }}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ m.nama }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <a href="{% url 'tp_list' %}?mupel={{ m.id }}" class="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors">
+                                Tujuan Pembelajaran
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada mupel pilihan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Kelompok 3: Muatan Lokal (11) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">C. Muatan Lokal Wajib Daerah</h3>
+                <p class="text-xs text-slate-500">Mata pelajaran nomor urut 11 pada format cetak rapor.</p>
+            </div>
+            <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">1 Mupel</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-4 w-28">Kode</th>
+                        <th class="py-3 px-4">Nama Mata Pelajaran</th>
+                        <th class="py-3 px-4 w-32 text-center">Status</th>
+                        <th class="py-3 px-4 w-40 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for m in mupel_mulok %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ m.urutan }}</td>
+                        <td class="py-3 px-4 font-mono text-xs font-bold text-amber-700">{{ m.kode }}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ m.nama }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <a href="{% url 'tp_list' %}?mupel={{ m.id }}" class="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded transition-colors">
+                                Tujuan Pembelajaran
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada muatan lokal.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

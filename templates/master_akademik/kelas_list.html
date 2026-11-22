@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Rombongan Belajar (Kelas) - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Rombongan Belajar (Kelas){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Action & Info Bar -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Daftar Rombongan Belajar</h2>
+            <p class="text-xs text-slate-500 mt-1">
+                Tahun Ajaran Aktif: 
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                    {{ ta_aktif.nama|default:"-" }}
+                </span>
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500">Total: <strong>{{ kelas_list|length }}</strong> Rombel</span>
+        </div>
+    </div>
+
+    <!-- Kelas Card Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for k in kelas_list %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between">
+            <div class="p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Fase {{ k.fase.kode }} (Tingkat {{ k.tingkat }})
+                        </span>
+                        <h3 class="text-2xl font-black text-slate-800 mt-2">Kelas {{ k.nama }}</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-emerald-700 font-bold text-lg">
+                        {{ k.tingkat }}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100 space-y-2 text-sm">
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span class="text-xs text-slate-400">Wali Kelas:</span>
+                        <span class="font-semibold text-slate-800">{{ k.wali_kelas.nama_lengkap|default:"Belum Ditentukan" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span class="text-xs text-slate-400">NIP Wali Kelas:</span>
+                        <span class="text-slate-600 font-mono text-xs">{{ k.wali_kelas.nip|default:"-" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span class="text-xs text-slate-400">Jumlah Murid:</span>
+                        <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                            {{ k.anggota_kelas.count }} Murid
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+                <a href="{% url 'murid_list' %}?kelas={{ k.id }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1.5">
+                    Lihat Daftar Murid
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-400">
+            <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <p class="font-medium text-slate-600">Belum ada rombel kelas yang terdaftar untuk tahun ajaran aktif.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Kelola Rentang KKTP Dinamis - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Pengaturan Kriteria Ketercapaian Tujuan Pembelajaran (KKTP){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filter Selection Bar -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <form method="get" class="flex flex-col md:flex-row items-center gap-4">
+            <div class="w-full md:w-1/3">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Mata Pelajaran</label>
+                <select name="mupel" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {% for m in mupel_list %}
+                    <option value="{{ m.id }}" {% if selected_mupel and selected_mupel.id == m.id %}selected{% endif %}>
+                        {{ m.urutan }}. {{ m.nama }} ({{ m.kategori }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full md:w-1/3">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fase / Jenjang</label>
+                <select name="fase" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {% for f in fase_list %}
+                    <option value="{{ f.kode }}" {% if selected_fase and selected_fase.kode == f.kode %}selected{% endif %}>
+                        {{ f.nama }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full md:w-auto md:self-end">
+                <button type="submit" class="w-full md:w-auto px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-semibold transition-colors shadow">
+                    Tampilkan KKTP
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- KKTP Editor Card -->
+    {% if selected_mupel and selected_fase %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">
+                    Rentang KKTP: {{ selected_mupel.nama }} (Fase {{ selected_fase.kode }})
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Sistem perumusan capaian kompetensi otomatis menggunakan batas interval nilai berikut.
+                </p>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                Urutan #{{ selected_mupel.urutan }} ({{ selected_mupel.get_kategori_display }})
+            </span>
+        </div>
+
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            <div class="space-y-4">
+                {% for item in kktp_items %}
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <!-- Predikat Badge -->
+                    <div class="w-16 h-16 rounded-xl flex flex-col items-center justify-center font-black text-xl shrink-0 
+                        {% if item.predikat == 'A' %}bg-emerald-100 text-emerald-800 border border-emerald-300
+                        {% elif item.predikat == 'B' %}bg-blue-100 text-blue-800 border border-blue-300
+                        {% elif item.predikat == 'C' %}bg-amber-100 text-amber-800 border border-amber-300
+                        {% else %}bg-rose-100 text-rose-800 border border-rose-300{% endif %}">
+                        <span>{{ item.predikat }}</span>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider">Predikat</span>
+                    </div>
+
+                    <!-- Label Form -->
+                    <div class="w-full md:w-1/4">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Label Ketercapaian</label>
+                        <input type="text" name="kktp_{{ item.id }}_label" value="{{ item.label }}" required
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+
+                    <!-- Interval Nilai Min - Max -->
+                    <div class="w-full md:w-1/4 flex items-center gap-2">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Nilai Min</label>
+                            <input type="number" step="0.01" name="kktp_{{ item.id }}_min" value="{{ item.nilai_min }}" required
+                                class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-mono font-bold text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <span class="text-slate-400 font-bold self-end mb-2">-</span>
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Nilai Max</label>
+                            <input type="number" step="0.01" name="kktp_{{ item.id }}_max" value="{{ item.nilai_max }}" required
+                                class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-mono font-bold text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Keterangan / Template Frasa -->
+                    <div class="w-full md:flex-1">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Frasa Awalan Narasi Rapor</label>
+                        <input type="text" name="kktp_{{ item.id }}_ket" value="{{ item.keterangan_default }}"
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            placeholder="Contoh: Murid menunjukkan penguasaan yang sangat baik dalam...">
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-slate-400">
+                    Belum ada rentang KKTP untuk mata pelajaran dan fase ini.
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if kktp_items %}
+            <div class="mt-6 pt-4 border-t border-slate-200 flex justify-end">
+                <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Simpan Perubahan Rentang KKTP
+                </button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
