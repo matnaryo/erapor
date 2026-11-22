@@ -2,13 +2,14 @@ import os
 import requests
 import json
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'))
 OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate")
-# Model Qwen Instruct lokal yang tersedia di komputer pengguna (qwen2.5:1.5b ringan & responsif)
-OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b')
+# Model Qwen lokal yang aktif digunakan (default: qwen2.5:1.5b)
+OLLAMA_MODEL = getattr(settings, 'OLLAMA_MODEL', os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b'))
 
 def generate_wali_kelas_note(
     nama_murid,
@@ -27,7 +28,7 @@ def generate_wali_kelas_note(
     """
     Menghasilkan draft narasi Catatan Wali Kelas yang membaca nilai akademik lengkap murid,
     merangkum perkembangan belajar dan adab, serta memberikan saran konkret tindak lanjut,
-    menggunakan model Local AI Ollama 'qwen3:4b-instruct'.
+    menggunakan model Local AI Ollama qwen2.5:1.5b.
     Menyediakan fallback cerdas otomatis berbasis data riil jika layanan offline/timeout.
     """
     first_name = nama_murid.split()[0].title()
@@ -133,7 +134,7 @@ def generate_capaian_kompetensi_ai(
 ):
     """
     Menghasilkan narasi capaian kompetensi tertinggi dan yang perlu bimbingan
-    yang disempurnakan oleh Model Qwen Instruct lokal untuk mata pelajaran tertentu.
+    yang disempurnakan oleh Model Local AI Ollama (qwen2.5:1.5b) untuk mata pelajaran tertentu.
     Jika Ollama offline/timeout, langsung mengembalikan narasi terstruktur baku.
     """
     first_name = nama_murid.split()[0]

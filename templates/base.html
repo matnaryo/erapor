@@ -123,8 +123,11 @@
               <span class="text-sm">📚</span> <span>11 Mata Pelajaran</span>
             </a>
             {% if user_role == 'SUPERADMIN' or user_role == 'KURIKULUM' %}
+            <a href="{% url 'admin:kurikulum_pembelajarankelas_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition border border-transparent">
+              <span class="text-sm">📋</span> <span>Plotting Guru/Pengampu</span>
+            </a>
             <a href="{% url 'kktp_manage' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kktp_manage' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
-              <span class="text-sm">⚖️</span> <span>Plotting & KKTP</span>
+              <span class="text-sm">⚖️</span> <span>KKTP</span>
             </a>
             {% endif %}
             <a href="{% url 'tp_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'tp_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
@@ -204,7 +207,7 @@
 
       <!-- Footer Info Server / Local LLM -->
       <div class="p-3 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-500 flex justify-between items-center shrink-0">
-        <span>Dell T30 • Qwen On-Premise</span>
+        <span>Dell T30 • {{ ai_model_name|default:"qwen2.5:1.5b" }}</span>
         <span class="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Ready
         </span>

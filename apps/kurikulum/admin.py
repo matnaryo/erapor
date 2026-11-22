@@ -31,3 +31,4 @@ class PembelajaranKelasAdmin(ModelAdmin):
     list_display = ('kelas', 'mata_pelajaran', 'guru_pengampu', 'semester')
     list_filter = ('kelas', 'mata_pelajaran', 'semester')
     search_fields = ('guru_pengampu__nama_lengkap', 'mata_pelajaran__nama')
+    exclude = ('tp_deskripsi_json',)

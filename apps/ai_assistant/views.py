@@ -78,7 +78,7 @@ def collect_student_grade_profile(anggota, sem_aktif):
 def ai_generate_notes_kelas_view(request, kelas_id):
     """
     Dashboard interaktif Asisten AI untuk Catatan Perkembangan Murid (SDIT Luqman Al Hakim Sleman).
-    Membaca nilai lengkap anak menggunakan model Qwen Instruct (Ollama), merumuskan ringkasan evaluasi,
+    Membaca nilai lengkap anak menggunakan model Ollama qwen2.5:1.5b, merumuskan ringkasan evaluasi,
     serta memberikan saran konkret perkembangan murid.
     """
     kelas = get_object_or_404(Kelas, id=kelas_id)

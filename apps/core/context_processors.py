@@ -1,10 +1,12 @@
+from django.conf import settings
 from .models import Sekolah, Pendidik
 from apps.master_akademik.models import TahunAjaran, Semester, Kelas
 
 def global_school_context(request):
     """
     Context processor global untuk seluruh template:
-    Profil sekolah, tahun ajaran aktif, semester aktif, profil pendidik, dan default kelas.
+    Profil sekolah, tahun ajaran aktif, semester aktif, profil pendidik, default kelas,
+    serta nama model AI aktif.
     Mengutamakan profil peran Pendidik terdaftar (Wali Kelas, Guru Mapel, Superadmin).
     """
     sekolah = Sekolah.objects.first()
@@ -48,4 +50,5 @@ def global_school_context(request):
         'user_role': role,
         'kelas_wali_list': kelas_wali,
         'default_kelas': default_kelas,
+        'ai_model_name': getattr(settings, 'OLLAMA_MODEL', 'qwen2.5:1.5b'),
     }

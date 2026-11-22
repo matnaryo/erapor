@@ -273,7 +273,7 @@ def nilai_mupel_input_view(request, pembelajaran_id):
 def api_generate_capaian_ai_view(request):
     """
     API JSON untuk menghasilkan narasi Capaian Tertinggi & Capaian Perlu Bimbingan
-    secara dinamis menggunakan Local AI Qwen Instruct berdasarkan nilai TP murid.
+    secara dinamis menggunakan Local AI Ollama qwen2.5:1.5b berdasarkan nilai TP murid.
     """
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method POST required.'}, status=405)

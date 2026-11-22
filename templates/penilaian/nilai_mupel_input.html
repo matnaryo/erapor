@@ -253,7 +253,7 @@
                 <button type="button" 
                         onclick="generateAiForRow('{{ r.anggota.id }}')" 
                         id="btn_ai_{{ r.anggota.id }}"
-                        title="Generate saran & poles narasi capaian dengan Asisten AI Qwen Instruct"
+                        title="Generate saran & poles narasi capaian dengan Asisten AI {{ ai_model_name|default:'qwen2.5:1.5b' }}"
                         class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center justify-center gap-1 mx-auto">
                   <span>✨ AI</span>
                 </button>

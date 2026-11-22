@@ -92,13 +92,14 @@ class PembelajaranKelas(models.Model):
     tp_deskripsi_json = models.JSONField(
         default=dict,
         blank=True,
+        editable=False,
         verbose_name="Keterangan Deskripsi TP 1-15 (JSON)",
         help_text="Menyimpan deskripsi materi TP 1 s/d TP 15 untuk pembelajaran ini."
     )
 
     class Meta:
-        verbose_name = "Pembelajaran Kelas (Penugasan Guru)"
-        verbose_name_plural = "Pembelajaran Kelas (Penugasan Guru)"
+        verbose_name = "Plotting Guru Pengampu"
+        verbose_name_plural = "Plotting Guru Pengampu"
         unique_together = ['kelas', 'mata_pelajaran', 'semester']
         ordering = ['kelas', 'mata_pelajaran__urutan']
 

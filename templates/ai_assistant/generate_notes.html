@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Asisten AI Catatan Wali Kelas (Qwen Instruct) - e-Rapor eLHaEs{% endblock %}
+{% block title %}Asisten AI Catatan Wali Kelas ({{ model_name|default:ai_model_name|default:'qwen2.5:1.5b' }}) - e-Rapor eLHaEs{% endblock %}
 
-{% block page_title %}Asisten AI Catatan Perkembangan Murid (Qwen Instruct){% endblock %}
+{% block page_title %}Asisten AI Catatan Perkembangan Murid ({{ model_name|default:ai_model_name|default:'qwen2.5:1.5b' }}){% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -94,10 +94,10 @@
                     </div>
                 </div>
 
-                <!-- Panel Rincian Nilai yang Dibaca oleh Qwen -->
+                <!-- Panel Rincian Nilai yang Dibaca oleh Model AI -->
                 <div x-show="openDetail" class="mb-4 p-4 rounded-lg bg-white border border-slate-200 text-xs space-y-2">
                     <div class="font-bold text-slate-700 border-b border-slate-100 pb-1 flex items-center justify-between">
-                        <span>Data Capaian yang Dianalisis oleh Qwen:</span>
+                        <span>Data Capaian yang Dianalisis oleh {{ model_name|default:ai_model_name|default:'qwen2.5:1.5b' }}:</span>
                         <span class="text-emerald-700 font-bold">Rata-rata: {{ m.profile.rata_rata|floatformat:1 }}</span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1 text-[11px]">
