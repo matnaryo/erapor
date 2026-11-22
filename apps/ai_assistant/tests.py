@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from apps.core.models import Pendidik, Sekolah
 from apps.master_akademik.models import TahunAjaran, Semester, Fase, Kelas, Murid, AnggotaKelas
 from apps.penilaian.models import CatatanWaliKelas
-from .ollama_client import generate_wali_kelas_note
+from .ollama_client import generate_wali_kelas_note, OLLAMA_MODEL
 
 class AIAssistantTests(TestCase):
     def setUp(self):
@@ -57,18 +57,38 @@ class AIAssistantTests(TestCase):
         )
         self.client.login(username='wali_ai_test', password='password123')
 
-    def test_ollama_generator_fallback_or_live(self):
+    def test_ollama_generator_reads_grades_and_gives_recommendations(self):
+        daftar_nilai = [
+            {'nama': 'Pendidikan Agama Islam', 'nilai': 85.0, 'perlu': 'Makharijul huruf surat juz 30'},
+            {'nama': 'Matematika', 'nilai': 89.0, 'tertinggi': 'Membilang cacah bilangan'}
+        ]
         text, is_ai, prompt = generate_wali_kelas_note(
             nama_murid="Muhammad Arhan Al-Fatih",
-            nilai_summary="Matematika 89, PAI 92",
-            kokurikuler="Sangat baik sholat dhuha dan tahfidz"
+            daftar_nilai=daftar_nilai,
+            rata_rata=87.0,
+            mupel_unggul=['Matematika (89)'],
+            mupel_perlu_bimbingan=['Pendidikan Agama Islam (85)'],
+            kokurikuler="Sangat baik sholat dhuha dan tahfidz",
+            timeout=2
         )
         self.assertIsNotNone(text)
         self.assertTrue(len(text) > 20)
         self.assertIn("Alhamd", text)
+        self.assertIn("Barakallahu fiik", text)
+        self.assertIn("Muhammad Arhan Al-Fatih", prompt)
 
     def test_ai_generate_notes_view_get(self):
         response = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Muhammad Arhan Al-Fatih")
-        self.assertContains(response, "Ollama")
+        self.assertContains(response, OLLAMA_MODEL)
+
+    def test_ai_generate_single_post(self):
+        response = self.client.post(
+            reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}),
+            {'action': 'generate_single', 'anggota_id': self.anggota.id}
+        )
+        self.assertEqual(response.status_code, 302)
+        catatan = CatatanWaliKelas.objects.filter(anggota_kelas=self.anggota).first()
+        self.assertIsNotNone(catatan)
+        self.assertIn("Alhamd", catatan.catatan)
