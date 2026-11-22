@@ -140,6 +140,14 @@ class AuthAndDashboardTest(TestCase):
         self.assertIn('Kelas I', html)
         self.assertNotIn('II Umar bin Khattab', html)
 
+        # 10. Menu Rombel / Kelas (/akademik/kelas/)
+        res = self.client.get(reverse('kelas_list'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('Kelas I', html)
+        self.assertNotIn('II Umar bin Khattab', html)
+        self.assertIn('Rombel Kelas Binaan Saya', html)
+
     def test_guru_mapel_menu_and_access_restrictions(self):
         user_mapel = User.objects.create_user(
             username='guru_mapel',
