@@ -1,50 +1,7 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
-from .models import (
-    NilaiAkhir, NilaiTP, KokurikulerNilai, EkstrakurikulerNilai,
-    PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
-)
 
-@admin.register(NilaiAkhir)
-class NilaiAkhirAdmin(ModelAdmin):
-    list_display = ('anggota_kelas', 'pembelajaran_kelas', 'nilai_angka', 'predikat')
-    list_filter = ('pembelajaran_kelas__mata_pelajaran', 'pembelajaran_kelas__kelas')
-    search_fields = ('anggota_kelas__murid__nama_lengkap',)
-
-@admin.register(NilaiTP)
-class NilaiTPAdmin(ModelAdmin):
-    list_display = ('anggota_kelas', 'pembelajaran_kelas', 'tp_nomor', 'nilai')
-    list_filter = ('pembelajaran_kelas__mata_pelajaran', 'pembelajaran_kelas__kelas', 'tp_nomor')
-    search_fields = ('anggota_kelas__murid__nama_lengkap',)
-
-@admin.register(KokurikulerNilai)
-class KokurikulerNilaiAdmin(ModelAdmin):
-    list_display = ('anggota_kelas', 'semester', 'aspek', 'predikat')
-    list_filter = ('semester', 'predikat')
-    search_fields = ('anggota_kelas__murid__nama_lengkap',)
-
-@admin.register(EkstrakurikulerNilai)
-class EkstrakurikulerNilaiAdmin(ModelAdmin):
-    list_display = ('urutan', 'kegiatan', 'predikat', 'anggota_kelas', 'semester')
-    list_filter = ('semester', 'kegiatan')
-    search_fields = ('anggota_kelas__murid__nama_lengkap', 'kegiatan')
-    ordering = ('urutan',)
-
-@admin.register(PrestasiMurid)
-class PrestasiMuridAdmin(ModelAdmin):
-    list_display = ('urutan', 'jenis_prestasi', 'anggota_kelas', 'semester')
-    list_filter = ('semester',)
-    search_fields = ('anggota_kelas__murid__nama_lengkap', 'jenis_prestasi')
-    ordering = ('urutan',)
-
-@admin.register(Ketidakhadiran)
-class KetidakhadiranAdmin(ModelAdmin):
-    list_display = ('anggota_kelas', 'semester', 'sakit', 'izin', 'tanpa_keterangan')
-    list_filter = ('semester',)
-    search_fields = ('anggota_kelas__murid__nama_lengkap',)
-
-@admin.register(CatatanWaliKelas)
-class CatatanWaliKelasAdmin(ModelAdmin):
-    list_display = ('anggota_kelas', 'semester', 'is_generated_by_ai', 'updated_at')
-    list_filter = ('is_generated_by_ai', 'semester')
-    search_fields = ('anggota_kelas__murid__nama_lengkap', 'catatan')
+# Seluruh modul Penilaian & Rekapitulasi (Nilai Akhir, Nilai TP, Kokurikuler,
+# Ekstrakurikuler, Prestasi Murid, Ketidakhadiran, dan Catatan Wali Kelas)
+# dikelola sepenuhnya melalui antarmuka modul Penilaian di aplikasi e-Rapor
+# (Matriks Penilaian, Spreadsheet Input Nilai TP, Form Wali Kelas & Asisten AI).
+# Tidak diregistrasikan ke Django Admin Portal agar antarmuka admin tetap simpel dan ringkas.

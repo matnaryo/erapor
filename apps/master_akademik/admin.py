@@ -1,11 +1,10 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin, TabularInline
-from .models import TahunAjaran, Semester, Fase, Kelas, Murid, AnggotaKelas
+from unfold.admin import ModelAdmin
+from .models import TahunAjaran, Semester, Fase, Kelas
 
-class AnggotaKelasInline(TabularInline):
-    model = AnggotaKelas
-    extra = 0
-    autocomplete_fields = ('murid',)
+# Murid dan AnggotaKelas (Plotting Rombel) dikelola sepenuhnya melalui antarmuka
+# Buku Induk Murid dan Kelola Anggota Kelas di aplikasi e-Rapor, sehingga tidak
+# dimunculkan di Django Admin Portal agar tampilan admin tetap simpel dan terfokus.
 
 @admin.register(TahunAjaran)
 class TahunAjaranAdmin(ModelAdmin):
@@ -26,16 +25,3 @@ class KelasAdmin(ModelAdmin):
     list_display = ('nama', 'tingkat', 'fase', 'tahun_ajaran', 'wali_kelas')
     list_filter = ('tingkat', 'fase', 'tahun_ajaran')
     search_fields = ('nama',)
-    inlines = [AnggotaKelasInline]
-
-@admin.register(Murid)
-class MuridAdmin(ModelAdmin):
-    list_display = ('nisn', 'nis', 'nama_lengkap', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'is_active')
-    list_filter = ('jenis_kelamin', 'is_active')
-    search_fields = ('nama_lengkap', 'nisn', 'nis')
-
-@admin.register(AnggotaKelas)
-class AnggotaKelasAdmin(ModelAdmin):
-    list_display = ('nomor_absen', 'murid', 'kelas')
-    list_filter = ('kelas__tahun_ajaran', 'kelas')
-    search_fields = ('murid__nama_lengkap', 'murid__nisn')

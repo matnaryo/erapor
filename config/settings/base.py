@@ -156,31 +156,16 @@ UNFOLD = {
     },
     "SIDEBAR": {
         "show_search": True,
-        "show_all_applications": True,
+        "show_all_applications": False,
         "navigation": [
             {
                 "title": _("Aplikasi Utama"),
                 "separator": True,
                 "items": [
                     {
-                        "title": _("Dashboard e-Rapor"),
-                        "icon": "dashboard",
+                        "title": _("Kembali ke e-Rapor"),
+                        "icon": "arrow_back",
                         "link": reverse_lazy("dashboard"),
-                    },
-                    {
-                        "title": _("Matriks Nilai"),
-                        "icon": "table_chart",
-                        "link": reverse_lazy("nilai_matrix"),
-                    },
-                    {
-                        "title": _("Buku Induk Murid"),
-                        "icon": "school",
-                        "link": reverse_lazy("murid_list"),
-                    },
-                    {
-                        "title": _("Ekspor / Impor Leger"),
-                        "icon": "file_download",
-                        "link": reverse_lazy("export_import_center"),
                     },
                 ],
             },
@@ -189,7 +174,7 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {
-                        "title": _("Profil SDIT"),
+                        "title": _("Profil SDIT (Kop & Logo)"),
                         "icon": "domain",
                         "link": reverse_lazy("admin:core_sekolah_changelist"),
                     },
@@ -211,7 +196,7 @@ UNFOLD = {
                 ],
             },
             {
-                "title": _("Master Akademik"),
+                "title": _("Struktur Akademik"),
                 "separator": True,
                 "items": [
                     {
@@ -224,77 +209,21 @@ UNFOLD = {
                         "icon": "meeting_room",
                         "link": reverse_lazy("admin:master_akademik_kelas_changelist"),
                     },
-                    {
-                        "title": _("Data Induk Murid"),
-                        "icon": "person",
-                        "link": reverse_lazy("admin:master_akademik_murid_changelist"),
-                    },
-                    {
-                        "title": _("Anggota Rombel"),
-                        "icon": "groups",
-                        "link": reverse_lazy("admin:master_akademik_anggotakelas_changelist"),
-                    },
                 ],
             },
             {
-                "title": _("Kurikulum & Pembelajaran"),
+                "title": _("Penugasan & Kurikulum"),
                 "separator": True,
                 "items": [
-                    {
-                        "title": _("11 Mata Pelajaran"),
-                        "icon": "menu_book",
-                        "link": reverse_lazy("admin:kurikulum_matapelajaran_changelist"),
-                    },
-                    {
-                        "title": _("Rentang KKTP"),
-                        "icon": "tune",
-                        "link": reverse_lazy("admin:kurikulum_kktprentang_changelist"),
-                    },
-                    {
-                        "title": _("Tujuan Pembelajaran (TP)"),
-                        "icon": "ads_click",
-                        "link": reverse_lazy("admin:kurikulum_tujuanpembelajaran_changelist"),
-                    },
                     {
                         "title": _("Plotting Guru Pengampu"),
                         "icon": "assignment_ind",
                         "link": reverse_lazy("admin:kurikulum_pembelajarankelas_changelist"),
                     },
-                ],
-            },
-            {
-                "title": _("Penilaian & Rekapitulasi"),
-                "separator": True,
-                "items": [
                     {
-                        "title": _("Nilai Akhir Rapor"),
-                        "icon": "grade",
-                        "link": reverse_lazy("admin:penilaian_nilaiakhir_changelist"),
-                    },
-                    {
-                        "title": _("Nilai Kokurikuler"),
-                        "icon": "volunteer_activism",
-                        "link": reverse_lazy("admin:penilaian_kokurikulernilai_changelist"),
-                    },
-                    {
-                        "title": _("Nilai Ekstrakurikuler"),
-                        "icon": "sports_tennis",
-                        "link": reverse_lazy("admin:penilaian_ekstrakurikulernilai_changelist"),
-                    },
-                    {
-                        "title": _("Prestasi Murid"),
-                        "icon": "military_tech",
-                        "link": reverse_lazy("admin:penilaian_prestasimurid_changelist"),
-                    },
-                    {
-                        "title": _("Ketidakhadiran (S/I/A)"),
-                        "icon": "event_busy",
-                        "link": reverse_lazy("admin:penilaian_ketidakhadiran_changelist"),
-                    },
-                    {
-                        "title": _("Catatan Wali Kelas & AI"),
-                        "icon": "rate_review",
-                        "link": reverse_lazy("admin:penilaian_catatanwalikelas_changelist"),
+                        "title": _("11 Mata Pelajaran"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:kurikulum_matapelajaran_changelist"),
                     },
                 ],
             },
