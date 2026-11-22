@@ -4,7 +4,7 @@ from apps.master_akademik.models import TahunAjaran, Semester, Kelas
 def global_school_context(request):
     """
     Context processor global untuk seluruh template:
-    Profil sekolah, tahun ajaran aktif, semester aktif, dan profil pendidik.
+    Profil sekolah, tahun ajaran aktif, semester aktif, profil pendidik, dan default kelas.
     Mendukung penuh akun Superadmin agar tidak pernah kehilangan hak akses.
     """
     sekolah = Sekolah.objects.first()
@@ -14,6 +14,7 @@ def global_school_context(request):
     pendidik = None
     role = None
     kelas_wali = []
+    default_kelas = None
 
     if request.user.is_authenticated:
         pendidik = getattr(request.user, 'profil_pendidik', None)
@@ -30,10 +31,12 @@ def global_school_context(request):
             role = 'SUPERADMIN'
             # Superadmin memiliki akses ke seluruh rombel kelas aktif
             kelas_wali = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
+            default_kelas = kelas_wali.first() if hasattr(kelas_wali, 'first') else (kelas_wali[0] if kelas_wali else None)
         elif pendidik:
             role = pendidik.role
             if pendidik.role == 'WALI_KELAS':
                 kelas_wali = pendidik.kelas_asuhan.all()
+                default_kelas = kelas_wali.first() if hasattr(kelas_wali, 'first') else (kelas_wali[0] if kelas_wali else None)
 
     return {
         'sekolah_aktif': sekolah,
@@ -42,4 +45,5 @@ def global_school_context(request):
         'profil_pendidik': pendidik,
         'user_role': role,
         'kelas_wali_list': kelas_wali,
+        'default_kelas': default_kelas,
     }

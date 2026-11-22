@@ -13,133 +13,301 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col" x-data="{ sidebarOpen: false }">
+<body class="bg-[#f8fafc] text-slate-800 antialiased min-h-screen" x-data="{ sidebarOpen: false }">
 
-  <!-- Top Navigation Bar -->
-  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 border-b border-slate-800">
-    <div class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+  <!-- Layout Wrapper Flex -->
+  <div class="flex h-screen overflow-hidden bg-[#f8fafc]">
+
+    {% if user.is_authenticated %}
+    {% with current_kelas=kelas_asuhan|default:default_kelas %}
+    <!-- Backdrop Mobile -->
+    <div x-show="sidebarOpen" 
+         @click="sidebarOpen = false" 
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden"
+         style="display: none;"></div>
+
+    <!-- ========================================== -->
+    <!-- SIDEBAR NAVIGASI KIRI                      -->
+    <!-- ========================================== -->
+    <aside id="appSidebar" 
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+           class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 custom-scrollbar overflow-y-auto transition-transform duration-200 ease-in-out shadow-lg md:shadow-none">
+      
+      <!-- Brand & Logo SDIT LHS -->
+      <div class="h-16 flex items-center justify-between px-4 border-b border-slate-100 shrink-0">
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5">
+          <img src="{% static 'img/logo_sdit_lhs.png' %}" alt="Logo SDIT LHS" class="w-9 h-9 object-contain drop-shadow">
+          <div class="leading-tight">
+            <h1 class="font-bold text-slate-800 text-sm tracking-wide">e-Rapor eLHaEs</h1>
+            <p class="text-[11px] text-emerald-700 font-semibold">SDIT Luqman Al Hakim</p>
+          </div>
+        </a>
+        <button @click="sidebarOpen = false" class="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Menu Items List -->
+      <div class="p-3 space-y-4 flex-1 custom-scrollbar overflow-y-auto text-xs">
         
-        <!-- Sisi Kiri: Brand & Mobile Toggle -->
+        <!-- Grup: Utama -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Utama</div>
+          <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg transition font-semibold {% if request.resolver_match.url_name == 'dashboard' %}bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+            <svg class="w-4 h-4 {% if request.resolver_match.url_name == 'dashboard' %}text-emerald-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        {% if user.is_superuser %}
+        <!-- Grup: Master Lembaga (Khusus Superadmin) -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Master Lembaga</div>
+          <div class="space-y-0.5">
+            <a href="{% url 'admin:core_sekolah_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+              <span class="text-sm">🏢</span> <span>Profil SDIT (Kop & Logo)</span>
+            </a>
+            <a href="{% url 'admin:master_akademik_tahunajaran_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+              <span class="text-sm">📅</span> <span>Tahun Ajaran & Semester</span>
+            </a>
+            <a href="{% url 'admin:auth_user_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+              <span class="text-sm">👥</span> <span>Manajemen User (RBAC)</span>
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Grup: Master Akademik -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Master Akademik</div>
+          <div class="space-y-0.5">
+            <a href="{% url 'kelas_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kelas_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🏫</span> <span>Rombel / Kelas (1-6)</span>
+            </a>
+            <a href="{% url 'murid_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'murid_list murid_create murid_detail murid_update' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🎓</span> <span>Buku Induk Murid</span>
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'admin:core_pendidik_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+              <span class="text-sm">👨‍🏫</span> <span>Data Pendidik (NIPY)</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'mupel_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'mupel_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📚</span> <span>11 Mata Pelajaran</span>
+            </a>
+            <a href="{% url 'kktp_manage' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kktp_manage' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">⚖️</span> <span>Plotting & KKTP</span>
+            </a>
+            <a href="{% url 'tp_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'tp_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🎯</span> <span>Tujuan Pembelajaran (TP)</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Grup: Penilaian Guru Mapel -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Penilaian Guru Mapel</div>
+          <div class="space-y-0.5">
+            <a href="{% url 'nilai_matrix' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'nilai_matrix nilai_mupel_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📊</span> <span>Matriks Nilai Rapor</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Grup: Tugas Khusus Wali Kelas -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tugas Khusus Wali Kelas</div>
+          <div class="space-y-0.5">
+            <a href="{% if current_kelas %}{% url 'kokurikuler_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kokurikuler_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🌱</span> <span>Penilaian Kokurikuler</span>
+            </a>
+            <a href="{% if current_kelas %}{% url 'rekap_absen_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'rekap_absen_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📅</span> <span>Rekap Kehadiran (S/I/A)</span>
+            </a>
+            <a href="{% if current_kelas %}{% url 'catatan_wali_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'catatan_wali_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📝</span> <span>Catatan Wali Kelas</span>
+            </a>
+            <a href="{% if current_kelas %}{% url 'ai_generate_notes_kelas' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center justify-between px-3 py-1.5 rounded-lg font-semibold transition {% if request.resolver_match.url_name == 'ai_generate_notes_kelas' %}bg-purple-100 text-purple-900 border border-purple-300{% else %}text-purple-700 bg-purple-50 hover:bg-purple-100/80 border border-purple-200{% endif %}">
+              <div class="flex items-center gap-2">
+                <span>🤖</span> <span>Catatan AI (1 Kelas)</span>
+              </div>
+              <span class="text-[9px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold shadow-2xs">Massal</span>
+            </a>
+            <a href="{% url 'export_import_center' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'export_import_center download_leger' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📑</span> <span>Leger Nilai (Excel)</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Grup: Pusat Cetak Dokumen -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Pusat Cetak Dokumen</div>
+          <div class="space-y-1">
+            <a href="{% if current_kelas %}{% url 'class_print_list' kelas_id=current_kelas.id %}{% else %}{% url 'dashboard' %}{% endif %}" class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Cetak Rapor & Kover</span>
+              </div>
+              <span class="bg-emerald-800 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">A4 Baku</span>
+            </a>
+          </div>
+        </div>
+
+        {% if user.is_superuser %}
+        <!-- Grup: Sistem & Pengaturan (Superadmin) -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1">Sistem & Pengaturan</div>
+          <div class="space-y-0.5">
+            <a href="{% url 'admin:index' %}" target="_blank" class="flex items-center justify-between px-3 py-1.5 rounded-lg text-amber-900 bg-amber-50 hover:bg-amber-100/80 border border-amber-200 font-semibold transition">
+              <div class="flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span>Django Admin Portal</span>
+              </div>
+              <span class="text-[9px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">Root</span>
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- Footer Info Server / Local LLM -->
+      <div class="p-3 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-500 flex justify-between items-center shrink-0">
+        <span>Dell T30 • Qwen On-Premise</span>
+        <span class="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Ready
+        </span>
+      </div>
+    </aside>
+    {% endwith %}
+    {% endif %}
+
+    <!-- ========================================== -->
+    <!-- KONTEN UTAMA KANAN (TOPBAR + MAIN AREA)    -->
+    <!-- ========================================== -->
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      
+      {% if user.is_authenticated %}
+      <!-- Topbar Header -->
+      <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
+        
+        <!-- Sisi Kiri: Hamburger Toggle & Periode Aktif -->
         <div class="flex items-center gap-3">
-          <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none">
+          <button @click="sidebarOpen = !sidebarOpen" 
+                  class="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none transition">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          
-          <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5">
-            <img src="{% static 'img/logo_sdit_lhs.png' %}" alt="Logo SDIT LHS" class="w-9 h-9 object-contain drop-shadow">
-            <div>
-              <div class="font-bold text-sm tracking-wide text-emerald-400">e-Rapor eLHaEs</div>
-              <div class="text-[10px] text-slate-400 leading-tight">SDIT Luqman Al Hakim Sleman</div>
+
+          <!-- Status Periode Aktif -->
+          <div class="flex items-center gap-2 text-xs bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-3 py-1.5 rounded-full font-medium shadow-2xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>T.A. <strong>{{ tahun_ajaran_aktif.nama|default:"2026/2027" }}</strong></span>
+            <span class="text-emerald-300">|</span>
+            <span>Semester <strong>{{ semester_aktif.semester|default:"1" }} ({% if semester_aktif.semester == 1 %}Ganjil{% else %}Genap{% endif %})</strong></span>
+          </div>
+
+          <div class="hidden lg:block text-slate-300">|</div>
+          <div class="hidden lg:block text-xs font-semibold text-slate-600 truncate max-w-xs xl:max-w-md">
+            {% block page_title %}{% endblock %}
+          </div>
+        </div>
+
+        <!-- Sisi Kanan: Akun Pendidik & Tombol Keluar -->
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:block text-right">
+            <div class="text-xs font-bold text-slate-800 leading-tight">{{ profil_pendidik.nama_lengkap|default:user.username }}</div>
+            <div class="text-[10px] mt-0.5">
+              {% if user.is_superuser or user_role == 'SUPERADMIN' %}
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">SUPERADMIN</span>
+              {% elif user_role == 'WALI_KELAS' %}
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Wali Kelas</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-300">Guru Mapel</span>
+              {% endif %}
             </div>
+          </div>
+
+          <a href="{% url 'logout' %}" 
+             class="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition font-medium shadow-2xs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <span class="hidden sm:inline">Keluar</span>
           </a>
         </div>
 
-        <!-- Sisi Tengah: Status Periode Aktif -->
-        <div class="hidden sm:flex items-center gap-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/60">
-          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300">T.A. <strong class="text-white">{{ tahun_ajaran_aktif.nama|default:"2026/2027" }}</strong></span>
-          <span class="text-slate-600">|</span>
-          <span class="text-slate-300">Semester <strong class="text-emerald-300">{{ semester_aktif.semester|default:"1" }}</strong></span>
-        </div>
-
-        <!-- Sisi Kanan: Akun Pengguna & Logout -->
-        <div class="flex items-center gap-3">
-          {% if user.is_authenticated %}
-            <div class="hidden sm:block text-right">
-              <div class="text-xs font-semibold text-white">{{ profil_pendidik.nama_lengkap|default:user.username }}</div>
-              <div class="text-[10px]">
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  {{ user_role|default:"Pendidik" }}
-                </span>
-              </div>
-            </div>
-            <a href="{% url 'logout' %}" class="inline-flex items-center gap-1.5 text-xs bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition font-medium shadow-xs">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-              <span>Keluar</span>
-            </a>
-          {% else %}
-            <a href="{% url 'login' %}" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg transition font-semibold">
-              Masuk
-            </a>
-          {% endif %}
-        </div>
-
-      </div>
-    </div>
-
-    {% if user.is_authenticated %}
-    <!-- Sub-Navbar Navigasi Modul -->
-    <nav class="bg-slate-950/70 border-t border-slate-800/80 px-4 sm:px-6 lg:px-8 overflow-x-auto">
-      <div class="flex items-center space-x-1 sm:space-x-2 py-2 text-xs font-semibold whitespace-nowrap">
-        <a href="{% url 'dashboard' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          Dashboard
-        </a>
-        <a href="{% url 'murid_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          Data Murid
-        </a>
-        <a href="{% url 'kelas_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          Rombel Kelas
-        </a>
-        <a href="{% url 'mupel_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          11 Mata Pelajaran
-        </a>
-        <a href="{% url 'kktp_manage' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          KKTP Dinamis
-        </a>
-        <a href="{% url 'tp_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          Tujuan Pembelajaran
-        </a>
-        <a href="{% url 'nilai_matrix' %}" class="px-3 py-1.5 rounded-lg text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 transition-colors">
-          Penilaian Rapor
-        </a>
-        <a href="{% url 'export_import_center' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
-          Ekspor/Impor Excel
-        </a>
-        {% if user.is_superuser %}
-        <a href="{% url 'admin:index' %}" target="_blank" class="px-3 py-1.5 rounded-lg text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-800/50 transition-colors inline-flex items-center gap-1">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          Django Admin
-        </a>
-        {% endif %}
-      </div>
-    </nav>
-    {% endif %}
-  </header>
-
-  <!-- Flash Messages -->
-  {% if messages %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-      {% for message in messages %}
-        <div class="p-3.5 rounded-xl border text-xs sm:text-sm flex items-center justify-between mb-2 shadow-xs {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}" x-data="{ show: true }" x-show="show">
-          <div class="flex items-center gap-2">
-            <span>{{ message }}</span>
+      </header>
+      {% else %}
+      <!-- Header Minimalis Non-Login -->
+      <header class="bg-white border-b border-slate-200 py-3.5 px-6 shadow-2xs flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <img src="{% static 'img/logo_sdit_lhs.png' %}" alt="Logo SDIT LHS" class="w-8 h-8 object-contain">
+          <div>
+            <span class="font-bold text-slate-800 text-sm">e-Rapor eLHaEs</span>
+            <span class="text-[11px] text-emerald-700 block font-medium">SDIT Luqman Al Hakim Sleman</span>
           </div>
-          <button @click="show = false" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
-      {% endfor %}
+        <div class="text-xs text-slate-500 font-medium">
+          T.A. 2026/2027 &bull; Kurikulum Merdeka
+        </div>
+      </header>
+      {% endif %}
+
+      <!-- Main Scrollable Content Area -->
+      <main class="flex-1 overflow-y-auto {% if user.is_authenticated %}p-4 sm:p-6 lg:p-8{% else %}p-4 flex flex-col justify-center{% endif %} custom-scrollbar">
+        
+        <!-- Flash Messages -->
+        {% if messages %}
+          <div class="mb-5 space-y-2 {% if not user.is_authenticated %}max-w-md mx-auto w-full{% endif %}">
+            {% for message in messages %}
+              <div class="p-3.5 rounded-xl border text-xs sm:text-sm flex items-center justify-between shadow-2xs {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}" x-data="{ show: true }" x-show="show">
+                <div class="flex items-center gap-2">
+                  <span>{{ message }}</span>
+                </div>
+                <button @click="show = false" class="text-slate-400 hover:text-slate-600">&times;</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Single Unique Content Block for ALL pages -->
+        {% block content %}{% endblock %}
+
+        <!-- Clean Footer -->
+        <footer class="mt-auto pt-6 pb-4 border-t border-slate-200 text-center text-xs text-slate-400">
+          &copy; 2026 <strong>e-Rapor eLHaEs</strong> &mdash; SDIT Luqman Al Hakim Sleman. Hak Cipta Dilindungi.
+        </footer>
+      </main>
+
     </div>
-  {% endif %}
 
-  <!-- Main Content Area -->
-  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-    {% block content %}{% endblock %}
-  </main>
+  </div>
 
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4">
-      &copy; 2026 <strong>e-Rapor eLHaEs</strong> &mdash; SDIT Luqman Al Hakim Sleman. Hak Cipta Dilindungi.
-    </div>
-  </footer>
-
-  {% block extra_js %}{% endblock %}
+{% block extra_js %}{% endblock %}
 </body>
 </html>
