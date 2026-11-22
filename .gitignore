@@ -16,6 +16,8 @@ media/excel_imports/*
 !media/excel_imports/.gitkeep
 media/foto_murid/*
 !media/foto_murid/.gitkeep
+media/kop_sekolah/*
+media/logo/*
 staticfiles/
 
 # Environment Variables

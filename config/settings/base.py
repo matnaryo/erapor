@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -13,6 +15,13 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')]
 
 # Application definition
+UNFOLD_APPS = [
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
+    'unfold.contrib.inlines',
+]
+
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -36,7 +45,7 @@ LOCAL_APPS = [
     'apps.printing.apps.PrintingConfig',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = UNFOLD_APPS + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -112,3 +121,199 @@ OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5-coder:3b')
 DEFAULT_KOTA = os.getenv('DEFAULT_KOTA', 'Sleman')
 DEFAULT_SEKOLAH_NAMA = os.getenv('DEFAULT_SEKOLAH_NAMA', 'SD Islam Terpadu Luqman Al Hakim Sleman')
 DEFAULT_ALAMAT = os.getenv('DEFAULT_ALAMAT', 'Jl. Palagan Tentara Pelajar No. 52 Sedan, Sariharjo, Ngaglik, Sleman, D.I. Yogyakarta 55581')
+
+# Django Unfold Configuration (Modern Tailwind Admin Theme)
+UNFOLD = {
+    "SITE_TITLE": "e-Rapor eLHaEs Admin",
+    "SITE_HEADER": "SDIT Luqman Al Hakim Sleman",
+    "SITE_SUBHEADER": "Portal Administrasi Kurikulum Merdeka",
+    "SITE_URL": "/",
+    "SITE_ICON": {
+        "light": lambda request: "/static/img/logo_sdit_lhs.png",
+        "dark": lambda request: "/static/img/logo_sdit_lhs.png",
+    },
+    "SITE_LOGO": {
+        "light": lambda request: "/static/img/logo_sdit_lhs.png",
+        "dark": lambda request: "/static/img/logo_sdit_lhs.png",
+    },
+    "SITE_SYMBOL": "school",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "primary": {
+            "50": "oklch(98.5% .014 160)",
+            "100": "oklch(96% .035 160)",
+            "200": "oklch(91% .075 160)",
+            "300": "oklch(84% .125 160)",
+            "400": "oklch(74% .175 160)",
+            "500": "oklch(60% .210 160)",  # Emerald primary
+            "600": "oklch(52% .190 160)",
+            "700": "oklch(44% .160 160)",
+            "800": "oklch(36% .120 160)",
+            "900": "oklch(28% .085 160)",
+            "950": "oklch(18% .050 160)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": _("Aplikasi Utama"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Dashboard e-Rapor"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("dashboard"),
+                    },
+                    {
+                        "title": _("Matriks Nilai"),
+                        "icon": "table_chart",
+                        "link": reverse_lazy("nilai_matrix"),
+                    },
+                    {
+                        "title": _("Buku Induk Murid"),
+                        "icon": "school",
+                        "link": reverse_lazy("murid_list"),
+                    },
+                    {
+                        "title": _("Ekspor / Impor Leger"),
+                        "icon": "file_download",
+                        "link": reverse_lazy("export_import_center"),
+                    },
+                ],
+            },
+            {
+                "title": _("Master Lembaga"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Profil SDIT"),
+                        "icon": "domain",
+                        "link": reverse_lazy("admin:core_sekolah_changelist"),
+                    },
+                    {
+                        "title": _("Data Pendidik & Tendik"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:core_pendidik_changelist"),
+                    },
+                    {
+                        "title": _("Tahun Ajaran"),
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:master_akademik_tahunajaran_changelist"),
+                    },
+                    {
+                        "title": _("Semester"),
+                        "icon": "event_repeat",
+                        "link": reverse_lazy("admin:master_akademik_semester_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Master Akademik"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Fase Kurikulum"),
+                        "icon": "flag",
+                        "link": reverse_lazy("admin:master_akademik_fase_changelist"),
+                    },
+                    {
+                        "title": _("Rombel / Kelas"),
+                        "icon": "meeting_room",
+                        "link": reverse_lazy("admin:master_akademik_kelas_changelist"),
+                    },
+                    {
+                        "title": _("Data Induk Murid"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:master_akademik_murid_changelist"),
+                    },
+                    {
+                        "title": _("Anggota Rombel"),
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:master_akademik_anggotakelas_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Kurikulum & Pembelajaran"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("11 Mata Pelajaran"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:kurikulum_matapelajaran_changelist"),
+                    },
+                    {
+                        "title": _("Rentang KKTP"),
+                        "icon": "tune",
+                        "link": reverse_lazy("admin:kurikulum_kktprentang_changelist"),
+                    },
+                    {
+                        "title": _("Tujuan Pembelajaran (TP)"),
+                        "icon": "ads_click",
+                        "link": reverse_lazy("admin:kurikulum_tujuanpembelajaran_changelist"),
+                    },
+                    {
+                        "title": _("Plotting Guru Pengampu"),
+                        "icon": "assignment_ind",
+                        "link": reverse_lazy("admin:kurikulum_pembelajarankelas_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Penilaian & Rekapitulasi"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Nilai Akhir Rapor"),
+                        "icon": "grade",
+                        "link": reverse_lazy("admin:penilaian_nilaiakhir_changelist"),
+                    },
+                    {
+                        "title": _("Nilai Kokurikuler"),
+                        "icon": "volunteer_activism",
+                        "link": reverse_lazy("admin:penilaian_kokurikulernilai_changelist"),
+                    },
+                    {
+                        "title": _("Nilai Ekstrakurikuler"),
+                        "icon": "sports_tennis",
+                        "link": reverse_lazy("admin:penilaian_ekstrakurikulernilai_changelist"),
+                    },
+                    {
+                        "title": _("Prestasi Murid"),
+                        "icon": "military_tech",
+                        "link": reverse_lazy("admin:penilaian_prestasimurid_changelist"),
+                    },
+                    {
+                        "title": _("Ketidakhadiran (S/I/A)"),
+                        "icon": "event_busy",
+                        "link": reverse_lazy("admin:penilaian_ketidakhadiran_changelist"),
+                    },
+                    {
+                        "title": _("Catatan Wali Kelas & AI"),
+                        "icon": "rate_review",
+                        "link": reverse_lazy("admin:penilaian_catatanwalikelas_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Autentikasi & Pengguna"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Akun Pengguna"),
+                        "icon": "manage_accounts",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                    },
+                    {
+                        "title": _("Grup & Hak Akses"),
+                        "icon": "security",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+}
