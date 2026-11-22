@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Kelola Anggota Kelas {{ kelas.nama }} - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Plotting & Anggota Kelas {{ kelas.nama }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Top Breadcrumb & Action Header -->
+  <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <a href="{% url 'kelas_list' %}" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Kembali ke Rombongan Belajar
+        </a>
+      </div>
+      <div class="flex items-center gap-3">
+        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Kelas {{ kelas.nama }}</h2>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+          Fase {{ kelas.fase.kode }} (Tingkat {{ kelas.tingkat }})
+        </span>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+          T.A. {{ kelas.tahun_ajaran.nama }}
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1 flex items-center gap-2">
+        <span>Wali Kelas: <strong>{{ kelas.wali_kelas.nama_lengkap|default:"Belum Ditentukan" }}</strong></span>
+        <span>&bull;</span>
+        <span>Total: <strong>{{ total_anggota }}</strong> Murid Aktif</span>
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="{% url 'murid_create' %}?kelas={{ kelas.id }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        + Input Murid Baru ke Kelas Ini
+      </a>
+      <a href="{% url 'murid_list' %}?kelas={{ kelas.id }}" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+        Buku Induk
+      </a>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left: Daftar Murid Terdaftar (Col 8) -->
+    <div class="lg:col-span-8 space-y-4">
+      <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              Daftar Murid Terdaftar
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Daftar siswa yang saat ini terplotting sebagai anggota Kelas {{ kelas.nama }}</p>
+          </div>
+          {% if anggota_list %}
+          <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+            {{ total_anggota }} Siswa
+          </span>
+          {% endif %}
+        </div>
+
+        {% if anggota_list %}
+        <form method="POST" action="{% url 'kelas_anggota' kelas.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_absen">
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th scope="col" class="py-3 px-4 w-24 text-center">No. Absen</th>
+                  <th scope="col" class="py-3 px-4">Nama Lengkap Murid</th>
+                  <th scope="col" class="py-3 px-4">NISN / NIS</th>
+                  <th scope="col" class="py-3 px-4 text-center">L/P</th>
+                  <th scope="col" class="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                {% for ag in anggota_list %}
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                  <td class="py-3 px-4 text-center">
+                    <input type="number" name="absen_{{ ag.id }}" value="{{ ag.nomor_absen }}" min="1" max="99" class="w-14 text-center font-bold text-slate-800 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-emerald-100/60 border border-emerald-200 flex items-center justify-center font-bold text-emerald-800 text-xs shrink-0 overflow-hidden">
+                        {% if ag.murid.foto %}
+                          <img src="{{ ag.murid.foto.url }}" alt="{{ ag.murid.nama_lengkap }}" class="w-full h-full object-cover">
+                        {% else %}
+                          {{ ag.murid.nama_lengkap|slice:":2"|upper }}
+                        {% endif %}
+                      </div>
+                      <div>
+                        <a href="{% url 'murid_detail' ag.murid.id %}" class="font-bold text-slate-900 hover:text-emerald-700 transition">
+                          {{ ag.murid.nama_lengkap }}
+                        </a>
+                        <p class="text-[11px] text-slate-400">{{ ag.murid.tempat_lahir }}, {{ ag.murid.tanggal_lahir|date:"d M Y" }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="font-mono font-semibold text-slate-800">{{ ag.murid.nisn }}</span>
+                    <span class="block text-[11px] text-slate-400 font-mono">NIS: {{ ag.murid.nis }}</span>
+                  </td>
+                  <td class="py-3 px-4 text-center">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold {% if ag.murid.jenis_kelamin == 'L' %}bg-blue-100 text-blue-800{% else %}bg-pink-100 text-pink-800{% endif %}">
+                      {{ ag.murid.jenis_kelamin }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <a href="{% url 'murid_detail' ag.murid.id %}" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="Lihat Buku Induk">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </a>
+                      <button type="button" onclick="confirmKeluarkan('{{ ag.id }}', '{{ ag.murid.nama_lengkap|escapejs }}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition" title="Keluarkan dari Kelas">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[11px] text-slate-500 italic">* Anda dapat mengubah urutan nomor presensi murid pada kolom di atas, lalu klik simpan.</span>
+            <button type="submit" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition">
+              Simpan Nomor Presensi
+            </button>
+          </div>
+        </form>
+        {% else %}
+        <div class="p-12 text-center text-slate-400">
+          <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <p class="font-semibold text-slate-600 text-sm">Belum ada murid di Kelas {{ kelas.nama }}</p>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Silakan pilih murid dari daftar di panel sebelah kanan untuk ditempatkan ke dalam rombel ini.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: Form Tambah Murid (Col 4) -->
+    <div class="lg:col-span-4 space-y-6">
+
+      <!-- Form Tambahkan Murid yang Tersedia -->
+      <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+            Tempatkan Murid ke Kelas
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Pilih murid dari Buku Induk yang belum memiliki kelas aktif di T.A. {{ kelas.tahun_ajaran.nama }}</p>
+        </div>
+
+        {% if murid_tersedia %}
+        <form method="POST" action="{% url 'kelas_anggota' kelas.id %}" class="space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="tambah">
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Murid *</label>
+            <select name="murid_id" required class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition outline-none">
+              <option value="">-- Pilih Murid Tersedia ({{ murid_tersedia|length }}) --</option>
+              {% for m in murid_tersedia %}
+              <option value="{{ m.id }}">
+                {{ m.nama_lengkap }} (NISN: {{ m.nisn }} / {{ m.jenis_kelamin }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Presensi / Urut *</label>
+            <input type="number" name="nomor_absen" value="{{ next_absen }}" min="1" max="99" required class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition outline-none">
+            <p class="text-[11px] text-slate-400 mt-1">Otomatis diisi nomor presensi berikutnya ({{ next_absen }}).</p>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            + Masukkan ke Kelas {{ kelas.nama }}
+          </button>
+        </form>
+        {% else %}
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200 text-amber-800 text-xs">
+          <p class="font-bold">Tidak ada murid tanpa kelas</p>
+          <p class="mt-1 text-amber-700">Semua murid aktif yang ada di Buku Induk saat ini sudah memiliki kelas di Tahun Ajaran {{ kelas.tahun_ajaran.nama }}.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Shortcut Input Murid Baru Langsung ke Kelas -->
+      <div class="bg-emerald-50/60 rounded-xl border border-emerald-200 p-5 space-y-3">
+        <h4 class="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Murid Baru Belum Ada di Sistem?
+        </h4>
+        <p class="text-xs text-slate-600">
+          Jika anak baru belum terdaftar di Buku Induk, daftarkan identitasnya sekarang dan langsung otomatis menjadi anggota <strong>Kelas {{ kelas.nama }}</strong>.
+        </p>
+        <a href="{% url 'murid_create' %}?kelas={{ kelas.id }}" class="block w-full text-center py-2 px-3 bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 rounded-xl text-xs font-bold transition shadow-xs">
+          Formulir Input Murid Baru &rarr;
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Hidden Delete Form for Confirmation -->
+<form id="formKeluarkan" method="POST" style="display:none;">
+  {% csrf_token %}
+</form>
+
+<script>
+function confirmKeluarkan(anggotaId, namaMurid) {
+  if (confirm("Apakah Anda yakin ingin mengeluarkan murid '" + namaMurid + "' dari Kelas {{ kelas.nama }}?")) {
+    const form = document.getElementById('formKeluarkan');
+    form.action = "{% url 'kelas_list' %}" + "{{ kelas.id }}/hapus-anggota/" + anggotaId + "/";
+    form.submit();
+  }
+}
+</script>
+{% endblock %}

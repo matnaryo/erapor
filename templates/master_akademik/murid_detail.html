@@ -47,13 +47,33 @@
       <!-- Riwayat Kelas Saat Ini -->
       <div class="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
         {% for ag in riwayat_kelas %}
-          <span class="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-            Kelas {{ ag.kelas.nama }} &bull; No. Presensi {{ ag.nomor_absen }} (T.A. {{ ag.kelas.tahun_ajaran.nama }})
-          </span>
+          <a href="{% url 'kelas_anggota' ag.kelas.id %}" class="px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition" title="Buka Pengelolaan Kelas {{ ag.kelas.nama }}">
+            <span>Kelas {{ ag.kelas.nama }} &bull; No. Presensi {{ ag.nomor_absen }} (T.A. {{ ag.kelas.tahun_ajaran.nama }})</span>
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
         {% empty %}
-          <span class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">Belum ditempatkan di kelas aktif</span>
+          <span class="text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-medium">Belum ditempatkan di rombel / kelas aktif</span>
         {% endfor %}
       </div>
+
+      {% if not riwayat_kelas and user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
+      <div class="pt-3 border-t border-slate-100">
+        <form method="POST" action="{% url 'murid_tempatkan_kelas' murid.id %}" class="flex flex-wrap items-center gap-2">
+          {% csrf_token %}
+          <span class="text-xs font-bold text-slate-700">Plotting ke Kelas:</span>
+          <select name="kelas_id" required class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+            <option value="">-- Pilih Rombel --</option>
+            {% for k in kelas_list_aktif %}
+              <option value="{{ k.id }}">Kelas {{ k.nama }} (Tingkat {{ k.tingkat }} - Fase {{ k.fase.kode }})</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="nomor_absen" placeholder="No. Absen (opsional)" min="1" max="99" class="w-36 px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition">
+            + Masukkan ke Kelas
+          </button>
+        </form>
+      </div>
+      {% endif %}
     </div>
   </div>
 

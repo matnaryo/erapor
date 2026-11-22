@@ -157,6 +157,39 @@
       </div>
     </div>
 
+    {% if form.kelas_tujuan %}
+    <!-- Bagian 5: Penempatan Kelas (Plotting Rombel) -->
+    <div class="space-y-4 pt-4 border-t border-slate-100 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <span>Penempatan Rombongan Belajar (Kelas)</span>
+          </h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">Pilih rombel jika murid baru ini ingin langsung dimasukkan ke dalam kelas aktif.</p>
+        </div>
+        {% if target_kelas %}
+        <span class="text-xs font-bold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg">
+          Kelas {{ target_kelas.nama }}
+        </span>
+        {% endif %}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Rombel / Kelas (Tahun Ajaran Aktif)</label>
+          {{ form.kelas_tujuan }}
+          {% if form.kelas_tujuan.errors %}<p class="text-[11px] text-red-600 mt-1">{{ form.kelas_tujuan.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Presensi / Urut</label>
+          {{ form.nomor_absen }}
+          {% if form.nomor_absen.errors %}<p class="text-[11px] text-red-600 mt-1">{{ form.nomor_absen.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Tombol Simpan -->
     <div class="pt-6 border-t border-slate-100 flex items-center justify-end gap-3">
       <a href="{% url 'murid_list' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">

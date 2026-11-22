@@ -78,3 +78,54 @@ class MasterAkademikTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "1 Bilal bin Rabah")
         self.assertContains(response, "Ustadz Test, S.Pd.")
+
+    def test_kelas_anggota_view(self):
+        response = self.client.get(reverse('kelas_anggota', kwargs={'pk': self.kelas_1.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertContains(response, "1 Bilal bin Rabah")
+
+    def test_tambah_anggota_kelas(self):
+        murid_2 = Murid.objects.create(
+            nama_lengkap="Haidar Zakaria",
+            nis="2601002",
+            nisn="0151234568",
+            jenis_kelamin="L",
+            tempat_lahir="Sleman",
+            tanggal_lahir="2019-06-15",
+            agama="Islam",
+            alamat_lengkap="Jl. Palagan KM 11"
+        )
+        response = self.client.post(reverse('kelas_anggota', kwargs={'pk': self.kelas_1.pk}), {
+            'action': 'tambah',
+            'murid_id': murid_2.pk,
+            'nomor_absen': 2
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(AnggotaKelas.objects.filter(kelas=self.kelas_1, murid=murid_2, nomor_absen=2).exists())
+
+    def test_hapus_anggota_kelas(self):
+        response = self.client.post(reverse('kelas_hapus_anggota', kwargs={
+            'kelas_id': self.kelas_1.pk,
+            'anggota_id': self.anggota.pk
+        }), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(AnggotaKelas.objects.filter(pk=self.anggota.pk).exists())
+
+    def test_murid_tempatkan_kelas_view(self):
+        murid_3 = Murid.objects.create(
+            nama_lengkap="Aisyah Humaira",
+            nis="2601003",
+            nisn="0151234569",
+            jenis_kelamin="P",
+            tempat_lahir="Yogyakarta",
+            tanggal_lahir="2019-07-20",
+            agama="Islam",
+            alamat_lengkap="Jl. Kaliurang KM 9"
+        )
+        response = self.client.post(reverse('murid_tempatkan_kelas', kwargs={'pk': murid_3.pk}), {
+            'kelas_id': self.kelas_1.pk,
+            'nomor_absen': 3
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(AnggotaKelas.objects.filter(kelas=self.kelas_1, murid=murid_3, nomor_absen=3).exists())
