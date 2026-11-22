@@ -65,34 +65,46 @@ def get_tp_descriptions(pembelajaran):
     Mengambil deskripsi Tujuan Pembelajaran (TP 1 s/d TP 15) untuk satu pembelajaran.
     Prioritas:
     1. tp_deskripsi_json yang disunting guru pada PembelajaranKelas.
-    2. Master data TujuanPembelajaran di database.
-    3. Template bawaan kurikulum standar per mata pelajaran.
+    2. Master data TujuanPembelajaran di database (berdasarkan tingkat kelas spesifik).
+    3. Template bawaan kurikulum standar per mata pelajaran (jika belum ada master TP).
+    Hanya mengembalikan TP yang benar-benar telah dirumuskan / aktif.
     """
     mupel = pembelajaran.mata_pelajaran
     custom_json = pembelajaran.tp_deskripsi_json or {}
     
-    # Ambil dari master TujuanPembelajaran jika ada
+    # Ambil dari master TujuanPembelajaran jika ada (utamakan berdasarkan tingkat kelas)
     master_tp = {}
-    for tp in TujuanPembelajaran.objects.filter(
+    master_qs = TujuanPembelajaran.objects.filter(
         mata_pelajaran=mupel,
-        fase=pembelajaran.kelas.fase,
+        tingkat=pembelajaran.kelas.tingkat,
         semester=pembelajaran.semester.semester
-    ).order_by('urutan'):
-        master_tp[tp.urutan] = tp.deskripsi
+    ).order_by('urutan')
+
+    # Fallback ke fase jika belum ada filter tingkat spesifik (misal data legacy)
+    if not master_qs.exists() and pembelajaran.kelas.fase:
+        master_qs = TujuanPembelajaran.objects.filter(
+            mata_pelajaran=mupel,
+            fase=pembelajaran.kelas.fase,
+            semester=pembelajaran.semester.semester
+        ).order_by('urutan')
+
+    for tp in master_qs:
+        if tp.deskripsi and tp.deskripsi.strip():
+            master_tp[tp.urutan] = tp.deskripsi.strip()
 
     template_mupel = DEFAULT_TP_TEMPLATES.get(mupel.kode, {})
 
     tp_dict = {}
     for i in range(1, 16):
         str_key = str(i)
-        if str_key in custom_json and custom_json[str_key].strip():
+        if str_key in custom_json and isinstance(custom_json[str_key], str) and custom_json[str_key].strip():
             tp_dict[i] = custom_json[str_key].strip()
         elif i in master_tp and master_tp[i].strip():
             tp_dict[i] = master_tp[i].strip()
         elif i in template_mupel and template_mupel[i].strip():
             tp_dict[i] = template_mupel[i].strip()
-        else:
-            tp_dict[i] = f"materi dan capaian kompetensi tujuan pembelajaran ke-{i} {mupel.nama}"
+        # Catatan: Kolom yang belum memiliki rumusan TP dibiarkan kosong (tidak ada key i)
+        # agar pada matriks penilaian otomatis terkunci (disabled) dan tidak bisa diedit.
 
     return tp_dict
 

@@ -40,7 +40,15 @@ class MuridForm(forms.ModelForm):
                 field.widget.attrs['class'] = 'rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4'
 
         ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
-        if ta_aktif:
+        if user and hasattr(user, 'profil_pendidik') and user.profil_pendidik.role == 'WALI_KELAS':
+            kelas_wali = user.profil_pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif) if ta_aktif else user.profil_pendidik.kelas_asuhan.all()
+            self.fields['kelas_tujuan'].queryset = kelas_wali.order_by('tingkat', 'nama')
+            if kelas_wali.exists():
+                first_k = kelas_wali.first()
+                self.fields['kelas_tujuan'].initial = first_k
+                max_absen = AnggotaKelas.objects.filter(kelas=first_k).aggregate(Max('nomor_absen'))['nomor_absen__max']
+                self.fields['nomor_absen'].initial = (max_absen or 0) + 1
+        elif ta_aktif:
             self.fields['kelas_tujuan'].queryset = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama')
         else:
             self.fields['kelas_tujuan'].queryset = Kelas.objects.all().order_by('tingkat', 'nama')
@@ -49,9 +57,3 @@ class MuridForm(forms.ModelForm):
             self.fields['kelas_tujuan'].initial = target_kelas
             max_absen = AnggotaKelas.objects.filter(kelas=target_kelas).aggregate(Max('nomor_absen'))['nomor_absen__max']
             self.fields['nomor_absen'].initial = (max_absen or 0) + 1
-        elif user and hasattr(user, 'profil_pendidik') and user.profil_pendidik.role == 'WALI_KELAS':
-            kelas_wali = Kelas.objects.filter(wali_kelas=user.profil_pendidik, tahun_ajaran=ta_aktif).first()
-            if kelas_wali:
-                self.fields['kelas_tujuan'].initial = kelas_wali
-                max_absen = AnggotaKelas.objects.filter(kelas=kelas_wali).aggregate(Max('nomor_absen'))['nomor_absen__max']
-                self.fields['nomor_absen'].initial = (max_absen or 0) + 1

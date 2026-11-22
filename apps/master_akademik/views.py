@@ -65,7 +65,12 @@ def murid_detail_view(request, pk):
     murid = get_object_or_404(Murid, pk=pk)
     riwayat_kelas = AnggotaKelas.objects.filter(murid=murid).select_related('kelas', 'kelas__tahun_ajaran', 'kelas__wali_kelas')
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
-    kelas_list_aktif = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas') if ta_aktif else Kelas.objects.all()
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        kelas_list_aktif = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif) if ta_aktif else pendidik.kelas_asuhan.all()
+    else:
+        kelas_list_aktif = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas') if ta_aktif else Kelas.objects.all()
     context = {
         'murid': murid,
         'riwayat_kelas': riwayat_kelas,
@@ -78,8 +83,14 @@ def murid_detail_view(request, pk):
 @role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def murid_create_view(request):
     """Formulir pendaftaran / input murid baru."""
-    target_kelas_id = request.GET.get('kelas')
-    target_kelas = Kelas.objects.filter(id=target_kelas_id).first() if target_kelas_id else None
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        target_kelas = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+    else:
+        target_kelas_id = request.GET.get('kelas')
+        target_kelas = Kelas.objects.filter(id=target_kelas_id).first() if target_kelas_id else None
 
     if request.method == 'POST':
         form = MuridForm(request.POST, request.FILES, user=request.user, target_kelas=target_kelas)

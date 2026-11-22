@@ -19,7 +19,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {% if kelas_list|length > 1 or is_admin or user_role == 'SUPERADMIN' %}
+                {% if is_admin and kelas_list|length > 1 %}
                 <form method="get" action="{% url 'catatan_wali_input_default' %}" class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
                     <label for="selectRombelManual" class="text-xs font-bold text-slate-600 whitespace-nowrap flex items-center gap-1">
                         <span>🏫</span> Rombel:

@@ -5,7 +5,7 @@ from apps.core.models import Pendidik, Sekolah
 from apps.master_akademik.models import TahunAjaran, Semester, Fase, Kelas, Murid, AnggotaKelas
 from apps.kurikulum.models import MataPelajaran, KKTPRentang, TujuanPembelajaran, PembelajaranKelas
 from apps.penilaian.models import NilaiAkhir, KokurikulerNilai, EkstrakurikulerNilai, PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
-from apps.penilaian.services import get_kktp_and_predikat, generate_capaian_kompetensi
+from apps.penilaian.services import get_kktp_and_predikat, generate_capaian_kompetensi, get_tp_descriptions
 
 class PenilaianTests(TestCase):
     def setUp(self):
@@ -259,3 +259,32 @@ class PenilaianTests(TestCase):
         }
         res_post = self.client.post(url, post_data, follow=True)
         self.assertEqual(res_post.status_code, 200)
+
+    def test_get_tp_descriptions_filtered_by_tingkat(self):
+        # self.pembelajaran ada di kelas_1 (tingkat=1)
+        # Buat TP untuk tingkat 1 dan tingkat 2 pada mupel yang sama
+        TujuanPembelajaran.objects.create(
+            mata_pelajaran=self.mupel,
+            fase=self.fase_a,
+            tingkat=2,
+            semester=1,
+            kode="TP 2.1",
+            deskripsi="TP Khusus Kelas 2 yang tidak boleh bocor ke Kelas 1",
+            urutan=1
+        )
+        tps = get_tp_descriptions(self.pembelajaran)
+        # Pembelajaran kelas 1 harus mendapatkan TP milik tingkat 1
+        self.assertIn(1, tps)
+        self.assertEqual(tps[1], "Membilang cacah bilangan hingga 20 dan menyelesaikan operasi penjumlahan konkrit.")
+        self.assertNotIn("Khusus Kelas 2", tps[1])
+        # Pastikan tidak ada TP dummy tak terdefinisi (misal TP 15)
+        self.assertNotIn(15, tps)
+
+    def test_nilai_matrix_empty_tp_disabled(self):
+        url = reverse('nilai_mupel_input', kwargs={'pembelajaran_id': self.pembelajaran.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Kolom TP 1 aktif
+        self.assertContains(response, f'id="tp_{self.anggota.id}_1"')
+        # Kolom yang tidak dirumuskan (misal TP 15) harus disabled
+        self.assertContains(response, 'disabled readonly tabindex="-1"')

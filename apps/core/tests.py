@@ -121,6 +121,25 @@ class AuthAndDashboardTest(TestCase):
         html = res.content.decode('utf-8')
         self.assertNotIn('<select name="kelas"', html)
 
+        # 7. Catatan Wali Kelas
+        res = self.client.get(reverse('catatan_wali_input', kwargs={'kelas_id': self.kelas.id}))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('id="selectRombelManual"', html)
+
+        # 8. Asisten AI Catatan Kelas
+        res = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas.id}))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('id="selectRombelAI"', html)
+
+        # 9. Form Tambah Murid (Hanya kelas binaan yang dapat dipilih)
+        res = self.client.get(reverse('murid_create'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('Kelas I', html)
+        self.assertNotIn('II Umar bin Khattab', html)
+
     def test_guru_mapel_menu_and_access_restrictions(self):
         user_mapel = User.objects.create_user(
             username='guru_mapel',

@@ -148,9 +148,14 @@
 
               <!-- 15 TP Columns (TP 1 .. TP 15) -->
               {% for i in tp_range %}
-              <th scope="col" class="py-3 px-1 text-center w-14 min-w-[56px] border-r border-slate-200 hover:bg-emerald-50 transition cursor-help"
-                  title="TP {{ i }}: {% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}">
-                <span class="block">TP{{ i }}</span>
+              <th scope="col" class="py-2.5 px-1 text-center w-14 min-w-[56px] border-r border-slate-200 transition cursor-help {% if i in active_tp_indices %}bg-emerald-50 text-emerald-950 font-bold{% else %}bg-slate-100/70 text-slate-400 font-normal opacity-60{% endif %}"
+                  title="TP {{ i }}: {% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}{% if i not in active_tp_indices %} (Belum Dirumuskan / Nonaktif){% endif %}">
+                <span class="block text-xs">TP{{ i }}</span>
+                {% if i in active_tp_indices %}
+                <span class="block text-[8px] text-emerald-700 font-bold uppercase tracking-tight">Aktif</span>
+                {% else %}
+                <span class="block text-[8px] text-slate-400 font-medium">Kosong</span>
+                {% endif %}
               </th>
               {% endfor %}
 
@@ -195,7 +200,8 @@
 
               <!-- 15 TP Input Cells -->
               {% for cell in r.tp_cells %}
-              <td class="p-1 text-center border-r border-slate-200 tp-cell-container" id="cell_{{ r.anggota.id }}_{{ cell.tp_num }}">
+              <td class="p-1 text-center border-r border-slate-200 tp-cell-container {% if not cell.has_tp %}bg-slate-100/50{% endif %}" id="cell_{{ r.anggota.id }}_{{ cell.tp_num }}">
+                {% if cell.has_tp %}
                 <input type="number" step="0.1" min="0" max="100" 
                        id="tp_{{ r.anggota.id }}_{{ cell.tp_num }}"
                        name="murid_{{ r.anggota.id }}_tp_{{ cell.tp_num }}" 
@@ -205,6 +211,12 @@
                        data-anggota-id="{{ r.anggota.id }}"
                        placeholder="-"
                        class="excel-input tp-input w-12 h-8 text-center text-xs font-mono font-bold text-slate-800 bg-white border border-slate-200 hover:border-slate-400 focus:border-emerald-500 rounded focus:bg-emerald-50/30 focus:ring-2 focus:ring-emerald-500/20 outline-none transition">
+                {% else %}
+                <input type="text" disabled readonly tabindex="-1"
+                       value="-" 
+                       title="TP {{ cell.tp_num }} belum dirumuskan untuk kelas ini."
+                       class="w-12 h-8 text-center text-xs font-mono text-slate-300 bg-slate-100/70 border border-dashed border-slate-200 rounded cursor-not-allowed select-none">
+                {% endif %}
               </td>
               {% endfor %}
 
@@ -560,16 +572,22 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         targetInput = document.querySelector(`.excel-input[data-row="${currentRow - 1}"][data-col="${currentCol}"]`);
       } else if (e.key === 'ArrowRight' && (this.selectionStart === this.value.length || this.value === "")) {
-        // Pindah ke TP berikutnya (kolom kanan, baris sama)
+        // Pindah ke TP berikutnya yang aktif (kolom kanan, baris sama)
         if (currentCol < 15) {
           e.preventDefault();
-          targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${currentCol + 1}"]`);
+          for (let nextCol = currentCol + 1; nextCol <= 15; nextCol++) {
+            targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${nextCol}"]`);
+            if (targetInput) break;
+          }
         }
       } else if (e.key === 'ArrowLeft' && this.selectionStart === 0) {
-        // Pindah ke TP sebelumnya (kolom kiri, baris sama)
+        // Pindah ke TP sebelumnya yang aktif (kolom kiri, baris sama)
         if (currentCol > 1) {
           e.preventDefault();
-          targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${currentCol - 1}"]`);
+          for (let prevCol = currentCol - 1; prevCol >= 1; prevCol--) {
+            targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${prevCol}"]`);
+            if (targetInput) break;
+          }
         }
       }
 

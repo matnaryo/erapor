@@ -82,9 +82,14 @@ def kktp_manage_view(request):
 
 @login_required(login_url='login')
 def tp_list_view(request):
-    """Daftar Tujuan Pembelajaran (TP) per Mata Pelajaran dan Fase."""
+    """
+    Daftar, Filter, Tambah, Edit, dan Hapus Tujuan Pembelajaran (TP).
+    Dikelompokkan berdasarkan Tingkat Kelas (1 s/d 6) bukan sekadar Fase.
+    Guru Mapel dapat memilih tingkat kelas dan mupel yang diampu secara fleksibel.
+    """
     mupel_id = request.GET.get('mupel')
-    fase_kode = request.GET.get('fase', 'A')
+    tingkat_param = request.GET.get('tingkat', '')
+    fase_param = request.GET.get('fase', '')
     semester = request.GET.get('sem', '1')
 
     pendidik = getattr(request.user, 'profil_pendidik', None)
@@ -92,50 +97,164 @@ def tp_list_view(request):
     fase_list = Fase.objects.all().order_by('kode')
     mupel_list = MataPelajaran.objects.filter(is_active=True).order_by('urutan')
 
+    guru_tingkat_list = []
     if pendidik and pendidik.role == 'GURU_MAPEL':
         ampu_mupel_ids = PembelajaranKelas.objects.filter(
             guru_pengampu=pendidik
         ).values_list('mata_pelajaran_id', flat=True).distinct()
         mupel_list = mupel_list.filter(id__in=ampu_mupel_ids)
+        guru_tingkat_list = list(PembelajaranKelas.objects.filter(
+            guru_pengampu=pendidik
+        ).values_list('kelas__tingkat', flat=True).distinct().order_by('kelas__tingkat'))
 
-    selected_fase = Fase.objects.filter(kode=fase_kode).first() or fase_list.first()
     selected_mupel = mupel_list.filter(id=mupel_id).first() if mupel_id else mupel_list.first()
 
+    # Opsi pilihan Tingkat Kelas (1 s/d 6)
+    tingkat_options = []
+    for t in range(1, 7):
+        f_k = 'A' if t in [1, 2] else ('B' if t in [3, 4] else 'C')
+        is_ampu = (t in guru_tingkat_list) if (pendidik and pendidik.role == 'GURU_MAPEL') else True
+        tingkat_options.append({
+            'tingkat': t,
+            'fase_kode': f_k,
+            'is_ampu': is_ampu,
+            'label': f"Kelas {t} (Fase {f_k})"
+        })
+
+    # Tentukan selected_tingkat
+    if tingkat_param in ['1', '2', '3', '4', '5', '6']:
+        selected_tingkat = int(tingkat_param)
+    elif tingkat_param == 'all':
+        selected_tingkat = 'all'
+    else:
+        # Default: tampilkan semua tingkat agar tidak ada TP yang tersembunyi
+        selected_tingkat = 'all'
+
+    # Tentukan selected_fase
+    if selected_tingkat != 'all':
+        fase_kode = 'A' if selected_tingkat in [1, 2] else ('B' if selected_tingkat in [3, 4] else 'C')
+        selected_fase = Fase.objects.filter(kode=fase_kode).first()
+    elif fase_param in ['A', 'B', 'C']:
+        selected_fase = Fase.objects.filter(kode=fase_param).first()
+    else:
+        selected_fase = None
+
+    # Handle POST Actions: Add, Edit, Delete
+    if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+
+        # Cek izin akses: Superuser, Staff, atau Pendidik yang berwenang
+        is_authorized = (
+            request.user.is_superuser or 
+            request.user.is_staff or 
+            (pendidik and pendidik.role in ['SUPERADMIN', 'KEPALA_SEKOLAH', 'KURIKULUM', 'WALI_KELAS', 'GURU_MAPEL'])
+        )
+
+        if not is_authorized:
+            messages.error(request, "Akses ditolak: Anda tidak memiliki wewenang untuk mengelola Tujuan Pembelajaran.")
+            return redirect(f"{request.path}?mupel={selected_mupel.id if selected_mupel else ''}&tingkat={selected_tingkat}&sem={semester}")
+
+        if action == 'add':
+            kode = request.POST.get('kode', '').strip()
+            deskripsi = request.POST.get('deskripsi', '').strip()
+            t_input = int(request.POST.get('tingkat', 1 if selected_tingkat == 'all' else selected_tingkat))
+            u_input = int(request.POST.get('urutan', 1))
+            f_kode = 'A' if t_input in [1, 2] else ('B' if t_input in [3, 4] else 'C')
+            f_obj = Fase.objects.filter(kode=f_kode).first()
+
+            if kode and deskripsi and selected_mupel:
+                TujuanPembelajaran.objects.create(
+                    mata_pelajaran=selected_mupel,
+                    fase=f_obj,
+                    tingkat=t_input,
+                    semester=int(semester),
+                    kode=kode,
+                    deskripsi=deskripsi,
+                    urutan=u_input
+                )
+                messages.success(request, f"Tujuan Pembelajaran {kode} (Kelas {t_input}) berhasil ditambahkan.")
+            return redirect(f"{request.path}?mupel={selected_mupel.id}&tingkat={t_input}&sem={semester}")
+
+        elif action == 'edit':
+            tp_id = request.POST.get('tp_id')
+            tp = get_object_or_404(TujuanPembelajaran, id=tp_id)
+            kode = request.POST.get('kode', '').strip()
+            deskripsi = request.POST.get('deskripsi', '').strip()
+            t_input = int(request.POST.get('tingkat', tp.tingkat))
+            u_input = int(request.POST.get('urutan', tp.urutan))
+            f_kode = 'A' if t_input in [1, 2] else ('B' if t_input in [3, 4] else 'C')
+            f_obj = Fase.objects.filter(kode=f_kode).first()
+
+            if kode and deskripsi:
+                tp.kode = kode
+                tp.deskripsi = deskripsi
+                tp.tingkat = t_input
+                tp.urutan = u_input
+                if f_obj:
+                    tp.fase = f_obj
+                tp.save()
+                messages.success(request, f"Tujuan Pembelajaran {tp.kode} berhasil diperbarui.")
+            return redirect(f"{request.path}?mupel={tp.mata_pelajaran_id}&tingkat={t_input}&sem={tp.semester}")
+
+        elif action == 'delete':
+            tp_id = request.POST.get('tp_id')
+            tp = get_object_or_404(TujuanPembelajaran, id=tp_id)
+            m_id = tp.mata_pelajaran_id
+            t_del = tp.tingkat
+            sem_del = tp.semester
+            kode_del = tp.kode
+            tp.delete()
+            messages.success(request, f"Tujuan Pembelajaran {kode_del} berhasil dihapus.")
+            return redirect(f"{request.path}?mupel={m_id}&tingkat={t_del}&sem={sem_del}")
+
+    # Query TP items
     tp_items = []
-    if selected_mupel and selected_fase:
-        tp_items = TujuanPembelajaran.objects.filter(
+    if selected_mupel:
+        tp_qs = TujuanPembelajaran.objects.filter(
             mata_pelajaran=selected_mupel,
-            fase=selected_fase,
             semester=int(semester)
-        ).order_by('tingkat', 'urutan')
+        )
+        if selected_tingkat != 'all':
+            tp_qs = tp_qs.filter(tingkat=selected_tingkat)
+        elif selected_fase:
+            tp_qs = tp_qs.filter(fase=selected_fase)
 
-    if request.method == 'POST' and request.user.is_staff:
-        # Tambah TP baru
-        kode = request.POST.get('kode', '').strip()
-        deskripsi = request.POST.get('deskripsi', '').strip()
-        tingkat = request.POST.get('tingkat', '1')
-        urutan = request.POST.get('urutan', '1')
+        tp_items = list(tp_qs.order_by('tingkat', 'urutan'))
 
-        if kode and deskripsi and selected_mupel and selected_fase:
-            TujuanPembelajaran.objects.create(
-                mata_pelajaran=selected_mupel,
-                fase=selected_fase,
-                tingkat=int(tingkat),
-                semester=int(semester),
-                kode=kode,
-                deskripsi=deskripsi,
-                urutan=int(urutan)
-            )
-            messages.success(request, f"Tujuan Pembelajaran {kode} berhasil ditambahkan.")
-            return redirect(f"{request.path}?mupel={selected_mupel.id}&fase={selected_fase.kode}&sem={semester}")
+    # Kelompokkan TP berdasarkan Tingkat Kelas (1 s/d 6)
+    if selected_tingkat != 'all':
+        tingkat_display_list = [selected_tingkat]
+    elif selected_fase:
+        tingkat_display_list = [1, 2] if selected_fase.kode == 'A' else ([3, 4] if selected_fase.kode == 'B' else [5, 6])
+    else:
+        tingkat_display_list = list(range(1, 7))
+
+    grouped_tp = []
+    for t in tingkat_display_list:
+        f_k = 'A' if t in [1, 2] else ('B' if t in [3, 4] else 'C')
+        items = [tp for tp in tp_items if tp.tingkat == t]
+        is_ampu = (t in guru_tingkat_list) if (pendidik and pendidik.role == 'GURU_MAPEL') else True
+        next_urutan = (max([tp.urutan for tp in items], default=0) + 1) if items else 1
+        grouped_tp.append({
+            'tingkat': t,
+            'fase_kode': f_k,
+            'items': items,
+            'count': len(items),
+            'is_ampu': is_ampu,
+            'next_urutan': next_urutan
+        })
 
     context = {
         'fase_list': fase_list,
         'mupel_list': mupel_list,
+        'tingkat_options': tingkat_options,
         'selected_fase': selected_fase,
+        'selected_tingkat': selected_tingkat,
         'selected_mupel': selected_mupel,
         'selected_sem': int(semester),
         'tp_items': tp_items,
+        'grouped_tp': grouped_tp,
+        'guru_tingkat_list': guru_tingkat_list,
     }
     return render(request, 'kurikulum/tp_list.html', context)
 

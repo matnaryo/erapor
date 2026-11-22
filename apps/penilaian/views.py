@@ -105,6 +105,7 @@ def nilai_mupel_input_view(request, pembelajaran_id):
 
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
     tp_descriptions = get_tp_descriptions(pembelajaran)
+    active_tp_indices = [i for i, desc in tp_descriptions.items() if desc and desc.strip()]
 
     # Ambil nilai yang sudah ada
     nilai_dict = {
@@ -133,9 +134,11 @@ def nilai_mupel_input_view(request, pembelajaran_id):
         for anggota in anggota_list:
             prefix = f"murid_{anggota.id}_"
             
-            # Kumpulkan nilai 15 TP
+            # Kumpulkan nilai TP (hanya untuk TP yang aktif / telah dirumuskan)
             tp_values = {}
             for i in range(1, 16):
+                if i not in active_tp_indices:
+                    continue
                 tp_val_str = request.POST.get(f"{prefix}tp_{i}", "").strip().replace(',', '.')
                 if tp_val_str != "":
                     try:
@@ -231,9 +234,10 @@ def nilai_mupel_input_view(request, pembelajaran_id):
         # Susun nilai per TP 1..15
         tp_cells = []
         for i in range(1, 16):
+            has_tp = (i in active_tp_indices)
             val = tp_dict.get(str(i)) or tp_dict.get(i)
             val_formatted = ""
-            if val is not None:
+            if val is not None and has_tp:
                 try:
                     val_float = float(val)
                     val_formatted = f"{val_float:.0f}" if val_float.is_integer() else f"{val_float:.2f}"
@@ -242,6 +246,8 @@ def nilai_mupel_input_view(request, pembelajaran_id):
             tp_cells.append({
                 'tp_num': i,
                 'value': val_formatted,
+                'has_tp': has_tp,
+                'tp_desc': tp_descriptions.get(i, ""),
             })
 
         row_data.append({
@@ -270,6 +276,7 @@ def nilai_mupel_input_view(request, pembelajaran_id):
         'row_data': row_data,
         'tp_descriptions': tp_descriptions,
         'tp_descriptions_json': json.dumps(tp_descriptions),
+        'active_tp_indices': active_tp_indices,
         'tp_range': list(range(1, 16)),
         'daftar_mupel_kelas': daftar_mupel_kelas,
     }

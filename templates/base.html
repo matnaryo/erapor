@@ -154,9 +154,6 @@
             <a href="{% url 'kokurikuler_matrix' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'kokurikuler_matrix kokurikuler_matrix_kelas' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">📊</span> <span>Matriks Kokurikuler</span>
             </a>
-            <a href="{% if current_kelas %}{% url 'kokurikuler_input' kelas_id=current_kelas.id %}{% else %}{% url 'kokurikuler_input_default' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'kokurikuler_input kokurikuler_input_default' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
-              <span class="text-sm">🌱</span> <span>Penilaian Kokurikuler</span>
-            </a>
             <a href="{% url 'kokurikuler_tp_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kokurikuler_tp_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">🎯</span> <span>Input TP Kokurikuler</span>
             </a>

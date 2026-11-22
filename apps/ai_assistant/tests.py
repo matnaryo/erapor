@@ -117,6 +117,10 @@ class AIAssistantTests(TestCase):
 
     def test_superadmin_sees_rombel_dropdown_and_can_switch_classes(self):
         # Sebagai superadmin, pada kelas 1 terlihat dropdown berisi kelas 1 dan 2
+        self.pendidik.role = 'SUPERADMIN'
+        self.pendidik.save()
+        self.user.refresh_from_db()
+        self.client.force_login(self.user)
         response = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pilih Rombel:")
@@ -134,6 +138,15 @@ class AIAssistantTests(TestCase):
         self.assertEqual(response_k2.status_code, 200)
         self.assertContains(response_k2, "Hilwa Sahara")
         self.assertNotContains(response_k2, "Muhammad Arhan Al-Fatih")
+
+    def test_wali_kelas_does_not_see_rombel_dropdown(self):
+        # Sebagai wali kelas murni, dropdown pilihan rombel disembunyikan
+        self.pendidik.role = 'WALI_KELAS'
+        self.pendidik.save()
+        self.user.refresh_from_db()
+        response = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Pilih Rombel:")
 
     def test_ai_generate_default_redirects_to_first_class(self):
         response = self.client.get(reverse('ai_generate_notes_default'))

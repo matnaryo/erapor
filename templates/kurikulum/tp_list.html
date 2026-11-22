@@ -6,12 +6,14 @@
 
 {% block content %}
 <div class="space-y-6">
+
     <!-- Filter Bar -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
         <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <!-- Pilihan Mata Pelajaran -->
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Mata Pelajaran</label>
-                <select name="mupel" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <select name="mupel" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     {% for m in mupel_list %}
                     <option value="{{ m.id }}" {% if selected_mupel and selected_mupel.id == m.id %}selected{% endif %}>
                         {{ m.urutan }}. {{ m.nama }}
@@ -19,116 +21,336 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- Pilihan Tingkat Kelas (1 s/d 6) -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fase</label>
-                <select name="fase" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    {% for f in fase_list %}
-                    <option value="{{ f.kode }}" {% if selected_fase and selected_fase.kode == f.kode %}selected{% endif %}>
-                        Fase {{ f.kode }}
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tingkat / Kelas</label>
+                <select name="tingkat" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" {% if selected_tingkat == 'all' %}selected{% endif %}>Semua Tingkat (Kelas 1 - 6)</option>
+                    {% for opt in tingkat_options %}
+                    <option value="{{ opt.tingkat }}" {% if selected_tingkat == opt.tingkat %}selected{% endif %}>
+                        {{ opt.label }}{% if opt.is_ampu %} &bull; Diampu{% endif %}
                     </option>
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- Pilihan Fase (Opsional) -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Semester</label>
-                <select name="sem" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <option value="1" {% if selected_sem == 1 %}selected{% endif %}>Semester 1 (Ganjil)</option>
-                    <option value="2" {% if selected_sem == 2 %}selected{% endif %}>Semester 2 (Genap)</option>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fase Kurikulum</label>
+                <select name="fase" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="" {% if not selected_fase %}selected{% endif %}>Semua Fase (A, B, C)</option>
+                    {% for f in fase_list %}
+                    <option value="{{ f.kode }}" {% if selected_fase and selected_fase.kode == f.kode %}selected{% endif %}>
+                        Fase {{ f.kode }} ({% if f.kode == 'A' %}Kelas 1-2{% elif f.kode == 'B' %}Kelas 3-4{% else %}Kelas 5-6{% endif %})
+                    </option>
+                    {% endfor %}
                 </select>
             </div>
-            <div>
-                <button type="submit" class="w-full px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-semibold transition-colors shadow">
-                    Terapkan Filter
+
+            <!-- Pilihan Semester & Tombol -->
+            <div class="flex items-center gap-2">
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Semester</label>
+                    <select name="sem" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="1" {% if selected_sem == 1 %}selected{% endif %}>Sem 1 (Ganjil)</option>
+                        <option value="2" {% if selected_sem == 2 %}selected{% endif %}>Sem 2 (Genap)</option>
+                    </select>
+                </div>
+                <button type="submit" class="mt-5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold transition shadow-xs">
+                    Filter
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Content Grid: TP List and Add Form -->
+    <!-- Content Grid: Grouped TP List and Add Form -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- List TP (2 Cols) -->
-        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+
+        <!-- List TP Grouped by Tingkat/Kelas (2 Cols) -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Title & Summary Header -->
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-base">
-                        {{ selected_mupel.nama }} &bull; Fase {{ selected_fase.kode }} (Semester {{ selected_sem }})
+                    <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                        <span>🎯 {{ selected_mupel.nama }}</span>
+                        {% if selected_tingkat != 'all' %}
+                        <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg font-bold">Kelas {{ selected_tingkat }}</span>
+                        {% elif selected_fase %}
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-lg font-bold">Fase {{ selected_fase.kode }}</span>
+                        {% else %}
+                        <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold">Seluruh Tingkat</span>
+                        {% endif %}
                     </h3>
-                    <p class="text-xs text-slate-500">Daftar capaian TP yang dinilai pada rapor semester ini.</p>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Daftar Tujuan Pembelajaran semester {{ selected_sem }}. Nilai matriks raport akan mengacu pada TP aktif berikut.
+                    </p>
                 </div>
-                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                    {{ tp_items|length }} TP
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+                    Total: {{ tp_items|length }} TP
                 </span>
             </div>
 
-            <div class="p-6 divide-y divide-slate-100">
-                {% for tp in tp_items %}
-                <div class="py-4 first:pt-0 last:pb-0 flex items-start gap-4">
-                    <div class="w-16 shrink-0 text-center">
-                        <span class="inline-block px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
-                            {{ tp.kode }}
+            <!-- Grouped Sections by Tingkat Kelas -->
+            {% for group in grouped_tp %}
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden" id="group_tingkat_{{ group.tingkat }}">
+                <!-- Group Header -->
+                <div class="px-5 py-3.5 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                            {{ group.tingkat }}
                         </span>
-                        <span class="block text-[10px] text-slate-400 mt-1">Kls {{ tp.tingkat }}</span>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">
+                                Kelas {{ group.tingkat }} &bull; Fase {{ group.fase_kode }}
+                            </h4>
+                            <span class="text-[11px] text-slate-500">
+                                {% if group.is_ampu %}
+                                <span class="text-emerald-700 font-semibold">&bull; Kelas yang Anda ampu</span>
+                                {% else %}
+                                <span>Tingkat umum SDIT</span>
+                                {% endif %}
+                            </span>
+                        </div>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm text-slate-800 font-medium leading-relaxed">{{ tp.deskripsi }}</p>
-                        <span class="inline-block mt-1 text-[11px] text-slate-400">Urutan: #{{ tp.urutan }}</span>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-lg {% if group.count > 0 %}bg-emerald-100 text-emerald-800 border border-emerald-200{% else %}bg-slate-100 text-slate-400{% endif %}">
+                            {{ group.count }} TP
+                        </span>
+                        <button type="button" 
+                                onclick="prepareAddForTingkat({{ group.tingkat }}, {{ group.next_urutan }})" 
+                                class="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ TP</span>
+                        </button>
                     </div>
                 </div>
-                {% empty %}
-                <div class="py-12 text-center text-slate-400">
-                    <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <p class="text-sm font-medium text-slate-600">Belum ada Tujuan Pembelajaran untuk kriteria ini.</p>
-                    <p class="text-xs text-slate-400 mt-1">Tambahkan TP baru melalui formulir di samping kanan.</p>
+
+                <!-- Group Items List -->
+                <div class="divide-y divide-slate-100 p-2">
+                    {% for tp in group.items %}
+                    <div class="p-3 hover:bg-slate-50/80 rounded-xl transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="flex items-start gap-3 flex-1">
+                            <div class="w-16 shrink-0 text-center">
+                                <span class="inline-block px-2 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                                    {{ tp.kode }}
+                                </span>
+                                <span class="block text-[10px] text-slate-400 mt-0.5">Urutan #{{ tp.urutan }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-medium text-slate-800 leading-relaxed">{{ tp.deskripsi }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons: Edit & Hapus -->
+                        <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                            <!-- Tombol Edit -->
+                            <button type="button"
+                                    onclick="openEditModal('{{ tp.id }}', '{{ tp.kode|escapejs }}', '{{ tp.tingkat }}', '{{ tp.urutan }}', '{{ tp.deskripsi|escapejs }}')"
+                                    class="px-2.5 py-1 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition flex items-center gap-1"
+                                    title="Edit TP {{ tp.kode }}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>Edit</span>
+                            </button>
+
+                            <!-- Tombol Hapus -->
+                            <form method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus Tujuan Pembelajaran {{ tp.kode|escapejs }}?');" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="tp_id" value="{{ tp.id }}">
+                                <button type="submit"
+                                        class="px-2.5 py-1 text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition flex items-center gap-1"
+                                        title="Hapus TP {{ tp.kode }}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Hapus</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="py-6 px-4 text-center text-slate-400">
+                        <p class="text-xs font-medium text-slate-500">Belum ada Tujuan Pembelajaran untuk Kelas {{ group.tingkat }}.</p>
+                        <button type="button" 
+                                onclick="prepareAddForTingkat({{ group.tingkat }}, 1)" 
+                                class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:underline">
+                            + Tambahkan TP Kelas {{ group.tingkat }} sekarang
+                        </button>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
+
         </div>
 
         <!-- Add Form (1 Col) -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
-            <div class="px-5 py-4 bg-slate-50 border-b border-slate-200">
-                <h4 class="font-bold text-slate-800 text-sm">Tambah Tujuan Pembelajaran</h4>
-                <p class="text-xs text-slate-500">Input TP baru untuk mata pelajaran terpilih.</p>
-            </div>
-            <form method="post" class="p-5 space-y-4">
-                {% csrf_token %}
+        <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden h-fit sticky top-20">
+            <div class="px-5 py-4 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Kode TP</label>
-                    <input type="text" name="kode" required placeholder="Contoh: TP 1.1"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 font-mono font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <h4 class="font-bold text-slate-800 text-sm">Tambah TP Baru</h4>
+                    <p class="text-xs text-slate-500">Mupel: {{ selected_mupel.nama }}</p>
                 </div>
+                <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-lg">
+                    Sem {{ selected_sem }}
+                </span>
+            </div>
+
+            <form method="post" id="formAddTp" class="p-5 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="mupel_id" value="{{ selected_mupel.id }}">
+                <input type="hidden" name="sem" value="{{ selected_sem }}">
+
+                <!-- Tingkat Kelas -->
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Tingkat Kelas</label>
-                    <select name="tingkat" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        {% if selected_fase.kode == 'A' %}
-                        <option value="1">Kelas 1</option>
-                        <option value="2">Kelas 2</option>
-                        {% elif selected_fase.kode == 'B' %}
-                        <option value="3">Kelas 3</option>
-                        <option value="4">Kelas 4</option>
-                        {% else %}
-                        <option value="5">Kelas 5</option>
-                        <option value="6">Kelas 6</option>
-                        {% endif %}
+                    <select name="tingkat" id="add_tingkat" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        {% for opt in tingkat_options %}
+                        <option value="{{ opt.tingkat }}" {% if selected_tingkat == opt.tingkat or selected_tingkat == 'all' and forloop.first %}selected{% endif %}>
+                            Kelas {{ opt.tingkat }} (Fase {{ opt.fase_kode }}){% if opt.is_ampu %} &bull; Diampu{% endif %}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
+
+                <!-- Kode TP -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Urutan Tampil</label>
-                    <input type="number" name="urutan" value="{{ tp_items|length|add:1 }}" required
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Kode TP</label>
+                    <input type="text" name="kode" id="add_kode" required placeholder="Contoh: TP 1.1 atau TP 1"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
+
+                <!-- Urutan Tampil (Kolom TP Matriks 1 - 15) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Urutan Kolom (1 - 15)</label>
+                    <input type="number" name="urutan" id="add_urutan" min="1" max="15" value="1" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Menentukan kolom penilaian pada matriks rapor.</p>
+                </div>
+
+                <!-- Deskripsi Capaian TP -->
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Deskripsi Capaian TP</label>
-                    <textarea name="deskripsi" rows="4" required placeholder="Contoh: Membilang cacah bilangan hingga 20 dan menyelesaikan operasi penjumlahan konkrit."
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-                    <p class="text-[11px] text-slate-400 mt-1">Gunakan kata kerja operasional dan deskripsi ringkas.</p>
+                    <textarea name="deskripsi" id="add_deskripsi" rows="4" required placeholder="Contoh: Membaca dan memahami kosa kata hijaiyah serta mempraktikkan tata cara wudhu..."
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed"></textarea>
+                    <p class="text-[10px] text-slate-400 mt-1">Gunakan kata kerja operasional ringkas. Deskripsi ini menjadi rujukan narasi capaian rapor.</p>
                 </div>
-                <button type="submit" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow transition-colors flex items-center justify-center gap-2">
+
+                <button type="submit" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                     Simpan TP Baru
                 </button>
             </form>
         </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL EDIT TUJUAN PEMBELAJARAN -->
+<div id="modalEditTp" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h4 class="font-bold text-slate-800 text-sm">Edit Tujuan Pembelajaran</h4>
+                <p class="text-xs text-slate-500">{{ selected_mupel.nama }} &bull; Semester {{ selected_sem }}</p>
+            </div>
+            <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold leading-none">&times;</button>
+        </div>
+
+        <form method="post" class="p-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="tp_id" id="edit_tp_id">
+
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Tingkat Kelas -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Tingkat Kelas</label>
+                    <select name="tingkat" id="edit_tingkat" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        {% for opt in tingkat_options %}
+                        <option value="{{ opt.tingkat }}">
+                            Kelas {{ opt.tingkat }} (Fase {{ opt.fase_kode }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Urutan Tampil -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Urutan Kolom (1 - 15)</label>
+                    <input type="number" name="urutan" id="edit_urutan" min="1" max="15" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Kode TP -->
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Kode TP</label>
+                <input type="text" name="kode" id="edit_kode" required
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+
+            <!-- Deskripsi Capaian TP -->
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Deskripsi Capaian TP</label>
+                <textarea name="deskripsi" id="edit_deskripsi" rows="4" required
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs transition">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<script>
+// Open Edit Modal with prefilled values
+function openEditModal(id, kode, tingkat, urutan, deskripsi) {
+    document.getElementById('edit_tp_id').value = id;
+    document.getElementById('edit_kode').value = kode;
+    document.getElementById('edit_tingkat').value = tingkat;
+    document.getElementById('edit_urutan').value = urutan;
+    document.getElementById('edit_deskripsi').value = deskripsi;
+    document.getElementById('modalEditTp').classList.remove('hidden');
+}
+
+// Close Edit Modal
+function closeEditModal() {
+    document.getElementById('modalEditTp').classList.add('hidden');
+}
+
+// Prepare Add form for a specific tingkat
+function prepareAddForTingkat(tingkat, nextUrutan) {
+    const sel = document.getElementById('add_tingkat');
+    if (sel) sel.value = tingkat;
+    const ur = document.getElementById('add_urutan');
+    if (ur) ur.value = nextUrutan || 1;
+    const kd = document.getElementById('add_kode');
+    if (kd && !kd.value) kd.value = 'TP ' + (nextUrutan || 1);
+    
+    // Smooth scroll to form if on mobile
+    const form = document.getElementById('formAddTp');
+    if (form) {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        kd.focus();
+    }
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
+    }
+});
+</script>
+
 {% endblock %}
