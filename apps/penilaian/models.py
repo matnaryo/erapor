@@ -21,6 +21,12 @@ class NilaiAkhir(models.Model):
         verbose_name="Deskripsi Capaian Kompetensi yang Perlu Bimbingan",
         help_text="Frasa naratif materi atau kompetensi yang perlu ditingkatkan/dibimbing."
     )
+    nilai_tp = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Nilai Rincian TP 1-15 (JSON)",
+        help_text="Menyimpan nilai TP 1 s/d TP 15, contoh: {'1': 85, '2': 90, ...}"
+    )
 
     class Meta:
         verbose_name = "Nilai Akhir Mata Pelajaran"
@@ -30,6 +36,25 @@ class NilaiAkhir(models.Model):
 
     def __str__(self):
         return f"{self.anggota_kelas.murid.nama_lengkap} - {self.pembelajaran_kelas.mata_pelajaran.nama}: {self.nilai_angka}"
+
+
+class NilaiTP(models.Model):
+    """
+    Rincian Nilai per Tujuan Pembelajaran (TP 1 s/d TP 15) per Murid per Mata Pelajaran.
+    """
+    anggota_kelas = models.ForeignKey(AnggotaKelas, on_delete=models.CASCADE, related_name='nilai_tp_detail')
+    pembelajaran_kelas = models.ForeignKey(PembelajaranKelas, on_delete=models.CASCADE, related_name='nilai_tp_detail')
+    tp_nomor = models.IntegerField(verbose_name="Nomor TP (1-15)")
+    nilai = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Nilai TP (0-100)")
+
+    class Meta:
+        verbose_name = "Nilai Tujuan Pembelajaran"
+        verbose_name_plural = "Nilai Tujuan Pembelajaran"
+        unique_together = ['anggota_kelas', 'pembelajaran_kelas', 'tp_nomor']
+        ordering = ['anggota_kelas', 'tp_nomor']
+
+    def __str__(self):
+        return f"TP{self.tp_nomor}: {self.nilai} ({self.anggota_kelas.murid.nama_lengkap})"
 
 
 class KokurikulerNilai(models.Model):

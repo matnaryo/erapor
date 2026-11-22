@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import (
-    NilaiAkhir, KokurikulerNilai, EkstrakurikulerNilai,
+    NilaiAkhir, NilaiTP, KokurikulerNilai, EkstrakurikulerNilai,
     PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
 )
 
@@ -9,6 +9,12 @@ from .models import (
 class NilaiAkhirAdmin(ModelAdmin):
     list_display = ('anggota_kelas', 'pembelajaran_kelas', 'nilai_angka', 'predikat')
     list_filter = ('pembelajaran_kelas__mata_pelajaran', 'pembelajaran_kelas__kelas')
+    search_fields = ('anggota_kelas__murid__nama_lengkap',)
+
+@admin.register(NilaiTP)
+class NilaiTPAdmin(ModelAdmin):
+    list_display = ('anggota_kelas', 'pembelajaran_kelas', 'tp_nomor', 'nilai')
+    list_filter = ('pembelajaran_kelas__mata_pelajaran', 'pembelajaran_kelas__kelas', 'tp_nomor')
     search_fields = ('anggota_kelas__murid__nama_lengkap',)
 
 @admin.register(KokurikulerNilai)

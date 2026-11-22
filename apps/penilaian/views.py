@@ -1,11 +1,21 @@
+import json
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from apps.core.decorators import role_required
 from apps.master_akademik.models import Kelas, AnggotaKelas, Semester, TahunAjaran
 from apps.kurikulum.models import PembelajaranKelas, MataPelajaran
-from .models import NilaiAkhir, KokurikulerNilai, EkstrakurikulerNilai, PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
-from .services import get_kktp_and_predikat, generate_capaian_kompetensi, ensure_pembelajaran_kelas
+from .models import (
+    NilaiAkhir, NilaiTP, KokurikulerNilai, EkstrakurikulerNilai, 
+    PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
+)
+from .services import (
+    get_kktp_and_predikat, generate_capaian_kompetensi, ensure_pembelajaran_kelas,
+    get_tp_descriptions, calculate_from_tp_scores
+)
+from apps.ai_assistant.ollama_client import generate_capaian_kompetensi_ai
 
 @login_required(login_url='login')
 def nilai_matrix_view(request):
@@ -45,7 +55,11 @@ def nilai_matrix_view(request):
 @login_required(login_url='login')
 def nilai_mupel_input_view(request, pembelajaran_id):
     """
-    Formulir input nilai akhir dan capaian kompetensi satu mata pelajaran untuk seluruh murid dalam satu kelas.
+    Formulir matriks nilai rapor interaktif (layaknya spreadsheet/Excel):
+    - Tabel kiri: No Presensi & Nama Murid.
+    - Kolom matriks: 15 Kolom Tujuan Pembelajaran (TP 1 s/d TP 15).
+    - Kolom hasil: Nilai Akhir (rata-rata terhitung), Predikat KKTP, Capaian Tertinggi, Capaian Terendah.
+    - Dilengkapi integrasi Asisten AI untuk menyempurnakan narasi rapor.
     """
     pembelajaran = get_object_or_404(
         PembelajaranKelas.objects.select_related('kelas', 'mata_pelajaran', 'semester', 'kelas__fase'),
@@ -57,8 +71,9 @@ def nilai_mupel_input_view(request, pembelajaran_id):
     mupel = pembelajaran.mata_pelajaran
 
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
+    tp_descriptions = get_tp_descriptions(pembelajaran)
 
-    # Ambil nilai yang sudah ada atau buat placeholder
+    # Ambil nilai yang sudah ada
     nilai_dict = {
         n.anggota_kelas_id: n for n in NilaiAkhir.objects.filter(
             pembelajaran_kelas=pembelajaran,
@@ -68,51 +83,145 @@ def nilai_mupel_input_view(request, pembelajaran_id):
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
-        
+
+        if action == 'save_tp_desc':
+            # Simpan keterangan deskripsi TP 1-15
+            custom_tp = {}
+            for i in range(1, 16):
+                val = request.POST.get(f"tp_desc_{i}", "").strip()
+                if val:
+                    custom_tp[str(i)] = val
+            pembelajaran.tp_deskripsi_json = custom_tp
+            pembelajaran.save()
+            messages.success(request, f"Keterangan Tujuan Pembelajaran (TP 1 - 15) untuk {mupel.nama} berhasil diperbarui.")
+            return redirect('nilai_mupel_input', pembelajaran_id=pembelajaran.id)
+
+        # Action == 'save' atau 'auto_generate'
         for anggota in anggota_list:
             prefix = f"murid_{anggota.id}_"
-            nilai_angka_raw = request.POST.get(f"{prefix}nilai", "").strip().replace(',', '.')
-            capaian_tertinggi = request.POST.get(f"{prefix}tertinggi", "").strip()
-            capaian_perlu = request.POST.get(f"{prefix}perlu", "").strip()
+            
+            # Kumpulkan nilai 15 TP
+            tp_values = {}
+            for i in range(1, 16):
+                tp_val_str = request.POST.get(f"{prefix}tp_{i}", "").strip().replace(',', '.')
+                if tp_val_str != "":
+                    try:
+                        v = float(tp_val_str)
+                        if 0 <= v <= 100:
+                            tp_values[str(i)] = v
+                    except ValueError:
+                        pass
 
-            if nilai_angka_raw:
-                try:
-                    nilai_angka = float(nilai_angka_raw)
-                    predikat, _ = get_kktp_and_predikat(nilai_angka, mupel, fase)
+            na_manual_str = request.POST.get(f"{prefix}nilai", "").strip().replace(',', '.')
+            capaian_tertinggi_manual = request.POST.get(f"{prefix}tertinggi", "").strip()
+            capaian_perlu_manual = request.POST.get(f"{prefix}perlu", "").strip()
 
-                    if action == 'auto_generate':
-                        predikat, capaian_tertinggi, capaian_perlu = generate_capaian_kompetensi(
-                            nilai_angka, mupel, fase, semester=sem.semester, tingkat=kelas.tingkat
+            calc_na, calc_pred, calc_tert, calc_perlu, max_tp, min_tp = calculate_from_tp_scores(
+                tp_values, tp_descriptions, mupel, fase
+            )
+
+            if tp_values:
+                nilai_angka = calc_na
+                predikat = calc_pred
+
+                if action == 'auto_generate' or not capaian_tertinggi_manual:
+                    capaian_tertinggi = calc_tert
+                else:
+                    capaian_tertinggi = capaian_tertinggi_manual
+
+                if action == 'auto_generate' or not capaian_perlu_manual:
+                    capaian_perlu = calc_perlu
+                else:
+                    capaian_perlu = capaian_perlu_manual
+
+                NilaiAkhir.objects.update_or_create(
+                    anggota_kelas=anggota,
+                    pembelajaran_kelas=pembelajaran,
+                    defaults={
+                        'nilai_angka': nilai_angka,
+                        'predikat': predikat,
+                        'capaian_tertinggi': capaian_tertinggi,
+                        'capaian_perlu_bimbingan': capaian_perlu,
+                        'nilai_tp': tp_values
+                    }
+                )
+
+                # Sinkronisasi ke model relasional NilaiTP
+                for i in range(1, 16):
+                    str_i = str(i)
+                    if str_i in tp_values:
+                        NilaiTP.objects.update_or_create(
+                            anggota_kelas=anggota,
+                            pembelajaran_kelas=pembelajaran,
+                            tp_nomor=i,
+                            defaults={'nilai': Decimal(str(tp_values[str_i]))}
                         )
+                    else:
+                        NilaiTP.objects.filter(
+                            anggota_kelas=anggota,
+                            pembelajaran_kelas=pembelajaran,
+                            tp_nomor=i
+                        ).delete()
 
+            elif na_manual_str:
+                # Fallback jika hanya menginput nilai akhir secara manual
+                try:
+                    na_val = float(na_manual_str)
+                    pred, _ = get_kktp_and_predikat(na_val, mupel, fase)
                     NilaiAkhir.objects.update_or_create(
                         anggota_kelas=anggota,
                         pembelajaran_kelas=pembelajaran,
                         defaults={
-                            'nilai_angka': nilai_angka,
-                            'predikat': predikat,
-                            'capaian_tertinggi': capaian_tertinggi,
-                            'capaian_perlu_bimbingan': capaian_perlu
+                            'nilai_angka': na_val,
+                            'predikat': pred,
+                            'capaian_tertinggi': capaian_tertinggi_manual or f"Murid menunjukkan penguasaan yang baik dalam materi {mupel.nama}.",
+                            'capaian_perlu_bimbingan': capaian_perlu_manual,
+                            'nilai_tp': {}
                         }
                     )
                 except ValueError:
                     pass
 
         if action == 'auto_generate':
-            messages.success(request, f"Capaian kompetensi otomatis untuk {mupel.nama} berhasil digenerate berdasarkan KKTP & TP.")
+            messages.success(request, f"Capaian tertinggi dan terendah untuk {mupel.nama} berhasil dirumuskan otomatis dari nilai TP.")
         else:
-            messages.success(request, f"Nilai akhir {mupel.nama} kelas {kelas.nama} berhasil disimpan.")
+            messages.success(request, f"Matriks nilai rapor {mupel.nama} Kelas {kelas.nama} berhasil disimpan!")
         
         return redirect('nilai_mupel_input', pembelajaran_id=pembelajaran.id)
 
-    # Siapkan row data untuk template
+    # Siapkan data baris murid untuk matriks
     row_data = []
     for anggota in anggota_list:
         nilai_obj = nilai_dict.get(anggota.id)
+        tp_dict = nilai_obj.nilai_tp if nilai_obj and nilai_obj.nilai_tp else {}
+        
+        # Susun nilai per TP 1..15
+        tp_cells = []
+        for i in range(1, 16):
+            val = tp_dict.get(str(i)) or tp_dict.get(i)
+            val_formatted = ""
+            if val is not None:
+                try:
+                    val_float = float(val)
+                    val_formatted = f"{val_float:.0f}" if val_float.is_integer() else f"{val_float:.2f}"
+                except (ValueError, TypeError):
+                    val_formatted = str(val)
+            tp_cells.append({
+                'tp_num': i,
+                'value': val_formatted,
+            })
+
         row_data.append({
             'anggota': anggota,
             'nilai': nilai_obj,
+            'tp_cells': tp_cells,
         })
+
+    # Pembelajaran lain di kelas ini untuk tabs switcher
+    daftar_mupel_kelas = PembelajaranKelas.objects.filter(
+        kelas=kelas,
+        semester=sem
+    ).select_related('mata_pelajaran').order_by('mata_pelajaran__urutan')
 
     context = {
         'pembelajaran': pembelajaran,
@@ -121,8 +230,72 @@ def nilai_mupel_input_view(request, pembelajaran_id):
         'fase': fase,
         'sem': sem,
         'row_data': row_data,
+        'tp_descriptions': tp_descriptions,
+        'tp_descriptions_json': json.dumps(tp_descriptions),
+        'tp_range': list(range(1, 16)),
+        'daftar_mupel_kelas': daftar_mupel_kelas,
     }
     return render(request, 'penilaian/nilai_mupel_input.html', context)
+
+
+@login_required(login_url='login')
+def api_generate_capaian_ai_view(request):
+    """
+    API JSON untuk menghasilkan narasi Capaian Tertinggi & Capaian Perlu Bimbingan
+    secara dinamis menggunakan Local AI Qwen Instruct berdasarkan nilai TP murid.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method POST required.'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        data = request.POST
+
+    pembelajaran_id = data.get('pembelajaran_id')
+    anggota_id = data.get('anggota_id')
+    
+    pembelajaran = get_object_or_404(
+        PembelajaranKelas.objects.select_related('kelas', 'mata_pelajaran', 'kelas__fase', 'semester'),
+        id=pembelajaran_id
+    )
+    anggota = get_object_or_404(AnggotaKelas.objects.select_related('murid'), id=anggota_id)
+    tp_scores = data.get('tp_scores', {})
+    
+    tp_descriptions = get_tp_descriptions(pembelajaran)
+    calc_na, calc_pred, calc_tert, calc_perlu, max_tp, min_tp = calculate_from_tp_scores(
+        tp_scores, tp_descriptions, pembelajaran.mata_pelajaran, pembelajaran.kelas.fase
+    )
+
+    if not max_tp:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Belum ada nilai TP yang diisi untuk murid ini.'
+        }, status=400)
+
+    max_desc = tp_descriptions.get(max_tp, f"materi TP {max_tp}")
+    min_desc = tp_descriptions.get(min_tp, f"materi TP {min_tp}") if min_tp and min_tp != max_tp else ""
+
+    tertinggi_ai, perlu_ai, is_ai = generate_capaian_kompetensi_ai(
+        nama_murid=anggota.murid.nama_lengkap,
+        mupel_nama=pembelajaran.mata_pelajaran.nama,
+        nilai_akhir=calc_na,
+        predikat=calc_pred,
+        max_desc=max_desc,
+        min_desc=min_desc,
+        timeout=15
+    )
+
+    return JsonResponse({
+        'status': 'success',
+        'nilai_akhir': calc_na,
+        'predikat': calc_pred,
+        'tertinggi': tertinggi_ai or calc_tert,
+        'perlu': perlu_ai or calc_perlu,
+        'is_ai': is_ai,
+        'max_tp': max_tp,
+        'min_tp': min_tp,
+    })
 
 
 @login_required(login_url='login')

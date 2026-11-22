@@ -89,6 +89,12 @@ class PembelajaranKelas(models.Model):
     mata_pelajaran = models.ForeignKey(MataPelajaran, on_delete=models.CASCADE, related_name='pembelajaran_kelas')
     guru_pengampu = models.ForeignKey(Pendidik, on_delete=models.CASCADE, related_name='jadwal_mengajar')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='pembelajaran_list')
+    tp_deskripsi_json = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Keterangan Deskripsi TP 1-15 (JSON)",
+        help_text="Menyimpan deskripsi materi TP 1 s/d TP 15 untuk pembelajaran ini."
+    )
 
     class Meta:
         verbose_name = "Pembelajaran Kelas (Penugasan Guru)"

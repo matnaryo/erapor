@@ -121,3 +121,38 @@ class PenilaianTests(TestCase):
         response = self.client.get(reverse('rekap_absen_input', kwargs={'kelas_id': self.kelas_1.id}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Muhammad Arhan Al-Fatih")
+
+    def test_matrix_tp_post_and_save(self):
+        url = reverse('nilai_mupel_input', kwargs={'pembelajaran_id': self.pembelajaran.id})
+        post_data = {
+            'action': 'save',
+            f'murid_{self.anggota.id}_tp_1': '90',
+            f'murid_{self.anggota.id}_tp_2': '80',
+            f'murid_{self.anggota.id}_tp_3': '85',
+        }
+        response = self.client.post(url, post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        
+        nilai = NilaiAkhir.objects.get(anggota_kelas=self.anggota, pembelajaran_kelas=self.pembelajaran)
+        self.assertEqual(float(nilai.nilai_angka), 85.0)
+        self.assertEqual(nilai.nilai_tp.get('1'), 90.0)
+        self.assertEqual(nilai.nilai_tp.get('2'), 80.0)
+        self.assertEqual(nilai.nilai_tp.get('3'), 85.0)
+        self.assertTrue(nilai.capaian_tertinggi.startswith("Murid"))
+        self.assertTrue(len(nilai.capaian_perlu_bimbingan) > 0)
+
+    def test_api_generate_capaian_ai(self):
+        url = reverse('api_generate_capaian_ai')
+        payload = {
+            'pembelajaran_id': self.pembelajaran.id,
+            'anggota_id': self.anggota.id,
+            'tp_scores': {'1': 95, '2': 70}
+        }
+        response = self.client.post(url, payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        res_json = response.json()
+        self.assertEqual(res_json['status'], 'success')
+        self.assertIn('tertinggi', res_json)
+        self.assertIn('perlu', res_json)
+        self.assertEqual(res_json['max_tp'], 1)
+        self.assertEqual(res_json['min_tp'], 2)

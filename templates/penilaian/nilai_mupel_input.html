@@ -1,125 +1,618 @@
 {% extends 'base.html' %}
 
-{% block title %}Input Nilai {{ mupel.nama }} - Kelas {{ kelas.nama }} - e-Rapor eLHaEs{% endblock %}
+{% block title %}Matriks Nilai {{ mupel.nama }} - Kelas {{ kelas.nama }} - e-Rapor eLHaEs{% endblock %}
 
-{% block page_title %}Penilaian Mata Pelajaran{% endblock %}
+{% block page_title %}Matriks Nilai Rapor: {{ mupel.nama }}{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Header Card -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold 
-                        {% if mupel.kategori == 'UMUM' %}bg-emerald-100 text-emerald-800
-                        {% elif mupel.kategori == 'PILIHAN' %}bg-blue-100 text-blue-800
-                        {% else %}bg-amber-100 text-amber-800{% endif %}">
-                        {{ mupel.kategori }} #{{ mupel.urutan }}
-                    </span>
-                    <span class="text-xs text-slate-500 font-medium">Kelas {{ kelas.nama }} &bull; Fase {{ fase.kode }}</span>
-                </div>
-                <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ mupel.nama }}</h2>
-                <p class="text-xs text-slate-500">
-                    Guru Pengampu: <strong>{{ pembelajaran.guru_pengampu.nama_lengkap }}</strong> &bull; Semester {{ sem.semester }}
-                </p>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
-                    &larr; Kembali ke Matriks
-                </a>
-            </div>
+
+  <!-- Top Header & Navigation -->
+  <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Ringkasan Matriks
+          </a>
+          <span class="text-slate-300">|</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold 
+            {% if mupel.kategori == 'UMUM' %}bg-emerald-100 text-emerald-800
+            {% elif mupel.kategori == 'PILIHAN' %}bg-blue-100 text-blue-800
+            {% else %}bg-amber-100 text-amber-800{% endif %}">
+            {{ mupel.get_kategori_display }} (#{{ mupel.urutan }})
+          </span>
+          <span class="text-xs text-slate-500 font-medium">Kelas {{ kelas.nama }} &bull; Fase {{ fase.kode }}</span>
         </div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <span>Matriks Nilai {{ mupel.nama }}</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Guru Pengampu: <strong>{{ pembelajaran.guru_pengampu.nama_lengkap }}</strong> &bull; Semester {{ sem.semester }} (T.A. {{ kelas.tahun_ajaran.nama }}) &bull; Total: <strong>{{ row_data|length }}</strong> Murid
+        </p>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" onclick="toggleTpAccordion()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          <span id="labelAccordionTp">Keterangan TP (1-15)</span>
+        </button>
+
+        <button type="button" onclick="recalculateAllRows()" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Hitung Ulang Semua
+        </button>
+
+        <button type="button" onclick="submitMatrixForm()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Simpan Matriks Nilai
+        </button>
+      </div>
     </div>
 
-    <!-- Form Input Nilai -->
-    <form method="post" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {% csrf_token %}
+    <!-- Switcher 11 Mata Pelajaran Tabs -->
+    <div class="mt-4 pt-4 border-t border-slate-100">
+      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Pindah Mata Pelajaran:</div>
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+        {% for pem in daftar_mupel_kelas %}
+        <a href="{% url 'nilai_mupel_input' pem.id %}" 
+           class="px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition flex items-center gap-1.5 
+           {% if pem.id == pembelajaran.id %}
+             bg-emerald-700 text-white shadow-xs
+           {% else %}
+             bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900
+           {% endif %}">
+          <span>{{ pem.mata_pelajaran.kode }}</span>
+          <span class="text-[10px] opacity-75">({{ pem.mata_pelajaran.urutan }})</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
 
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-                <h3 class="font-bold text-slate-800 text-base">Daftar Nilai Akhir & Capaian Kompetensi</h3>
-                <p class="text-xs text-slate-500">
-                    Masukkan Nilai Akhir (0-100), lalu gunakan <strong>Hitung Otomatis</strong> untuk menyusun narasi capaian standar.
-                </p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button type="submit" name="action" value="auto_generate" onclick="return confirm('Rumuskan capaian kompetensi otomatis dari rentang KKTP & TP untuk murid yang telah diisi nilai angka?')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Hitung Otomatis Capaian
-                </button>
-                <button type="submit" name="action" value="save" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Simpan Nilai
-                </button>
-            </div>
+  <!-- Collapsible Panel: Keterangan Deskripsi TP 1 - 15 -->
+  <div id="panelAccordionTp" class="hidden bg-white rounded-2xl shadow-xs border border-emerald-200 p-6 space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div>
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Keterangan Materi Tujuan Pembelajaran (TP 1 s/d TP 15) &bull; {{ mupel.nama }}
+        </h3>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Deskripsi singkat materi ini akan otomatis menjadi rujukan saat menyusun <strong>Capaian Tertinggi</strong> dan <strong>Capaian Terendah / Perlu Bimbingan</strong>.
+        </p>
+      </div>
+      <button type="button" onclick="toggleTpAccordion()" class="text-xs font-bold text-slate-400 hover:text-slate-700">Tutup &times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'nilai_mupel_input' pembelajaran.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_tp_desc">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {% for i in tp_range %}
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <label class="block text-[11px] font-bold text-emerald-800">
+            TP {{ i }}
+          </label>
+          <input type="text" name="tp_desc_{{ i }}" 
+                 value="{% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}"
+                 placeholder="Materi capaian TP {{ i }}..." 
+                 class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
         </div>
+        {% endfor %}
+      </div>
 
-        <div class="p-6 space-y-6">
-            {% for r in row_data %}
-            <div class="p-5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-3 border-b border-slate-200/60">
-                    <div class="flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-sm flex items-center justify-center shrink-0">
-                            {{ r.anggota.nomor_absen|default:forloop.counter }}
-                        </span>
-                        <div>
-                            <h4 class="font-bold text-slate-900 text-sm">{{ r.anggota.murid.nama_lengkap }}</h4>
-                            <p class="text-[11px] text-slate-500 font-mono">NISN: {{ r.anggota.murid.nisn }} &bull; NIS: {{ r.anggota.murid.nis }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 w-full md:w-auto">
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nilai Akhir (0-100)</label>
-                            <input type="number" step="0.01" min="0" max="100" name="murid_{{ r.anggota.id }}_nilai"
-                                value="{{ r.nilai.nilai_angka|default:'' }}"
-                                placeholder="0 - 100"
-                                class="w-32 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-center font-mono font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-                        {% if r.nilai and r.nilai.predikat %}
-                        <div class="text-center pt-4">
-                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm
-                                {% if r.nilai.predikat == 'A' %}bg-emerald-100 text-emerald-800 border border-emerald-300
-                                {% elif r.nilai.predikat == 'B' %}bg-blue-100 text-blue-800 border border-blue-300
-                                {% elif r.nilai.predikat == 'C' %}bg-amber-100 text-amber-800 border border-amber-300
-                                {% else %}bg-rose-100 text-rose-800 border border-rose-300{% endif %}">
-                                {{ r.nilai.predikat }}
-                            </span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-emerald-800 mb-1">
-                            Capaian Kompetensi Tertinggi (Sangat Baik / Menguasai)
-                        </label>
-                        <textarea name="murid_{{ r.anggota.id }}_tertinggi" rows="3"
-                            placeholder="Contoh: Murid menunjukkan penguasaan yang sangat baik dalam..."
-                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">{{ r.nilai.capaian_tertinggi|default:'' }}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-amber-800 mb-1">
-                            Capaian Perlu Bimbingan / Peningkatan
-                        </label>
-                        <textarea name="murid_{{ r.anggota.id }}_perlu" rows="3"
-                            placeholder="Contoh: Murid perlu bimbingan dalam..."
-                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">{{ r.nilai.capaian_perlu_bimbingan|default:'' }}</textarea>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="py-12 text-center text-slate-400">Belum ada murid di kelas ini.</div>
-            {% endfor %}
-        </div>
-
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-            <button type="submit" name="action" value="save" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow transition-colors flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                Simpan Seluruh Nilai {{ mupel.nama }}
-            </button>
-        </div>
+      <div class="pt-3 border-t border-slate-100 flex justify-end">
+        <button type="submit" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs transition">
+          Simpan Keterangan TP
+        </button>
+      </div>
     </form>
+  </div>
+
+  <!-- Instruction Bar -->
+  <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-amber-900 gap-2">
+    <div class="flex items-center gap-2">
+      <span class="font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded text-[11px]">PETUNJUK EXCEL</span>
+      <span>Ketik nilai di sel TP (1-15). <strong>Enter / Panah Bawah</strong> untuk murid berikutnya, <strong>Tab / Panah Kanan</strong> untuk kolom berikutnya. Nilai Akhir & Narasi dirumuskan otomatis secara instan.</span>
+    </div>
+    <div class="flex items-center gap-3 shrink-0 text-[11px] font-semibold text-slate-600">
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-300 inline-block"></span> Nilai Tertinggi</span>
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-100 border border-rose-300 inline-block"></span> Nilai Terendah</span>
+    </div>
+  </div>
+
+  <!-- THE EXCEL SPREADSHEET MATRIX TABLE -->
+  <form id="matrixForm" method="POST" action="{% url 'nilai_mupel_input' pembelajaran.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save">
+
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+      
+      <div class="overflow-x-auto relative max-h-[750px]">
+        <table id="matrixTable" class="w-full text-left border-collapse text-xs">
+          
+          <!-- Sticky Table Header -->
+          <thead class="sticky top-0 z-30 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[11px] shadow-xs">
+            <tr>
+              <!-- Sticky Left: No & Nama -->
+              <th scope="col" class="py-3 px-3 w-10 text-center sticky left-0 z-40 bg-slate-100 border-r border-slate-200">
+                No
+              </th>
+              <th scope="col" class="py-3 px-4 min-w-[200px] w-52 sticky left-10 z-40 bg-slate-100 border-r-2 border-slate-300 shadow-sm">
+                Nama Murid
+              </th>
+
+              <!-- 15 TP Columns (TP 1 .. TP 15) -->
+              {% for i in tp_range %}
+              <th scope="col" class="py-3 px-1 text-center w-14 min-w-[56px] border-r border-slate-200 hover:bg-emerald-50 transition cursor-help"
+                  title="TP {{ i }}: {% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}">
+                <span class="block">TP{{ i }}</span>
+              </th>
+              {% endfor %}
+
+              <!-- Calculated Output Columns -->
+              <th scope="col" class="py-3 px-2 text-center w-20 bg-slate-200/80 border-r border-slate-300">
+                Rata-rata (NA)
+              </th>
+              <th scope="col" class="py-3 px-2 text-center w-14 bg-slate-200/80 border-r border-slate-300">
+                Pred
+              </th>
+              <th scope="col" class="py-3 px-3 min-w-[280px] w-72 bg-emerald-50 text-emerald-900 border-r border-slate-200">
+                Capaian Tertinggi
+              </th>
+              <th scope="col" class="py-3 px-3 min-w-[280px] w-72 bg-rose-50 text-rose-900 border-r border-slate-200">
+                Capaian Terendah / Bimbingan
+              </th>
+              <th scope="col" class="py-3 px-2 text-center w-20 bg-slate-100">
+                Asisten AI
+              </th>
+            </tr>
+          </thead>
+
+          <!-- Table Body -->
+          <tbody class="divide-y divide-slate-200">
+            {% for r in row_data %}
+            <tr id="row_{{ r.anggota.id }}" class="student-row hover:bg-slate-50/90 transition-colors" data-anggota-id="{{ r.anggota.id }}" data-nama="{{ r.anggota.murid.nama_lengkap|escapejs }}">
+              
+              <!-- Sticky Left: No Presensi -->
+              <td class="py-2.5 px-3 text-center font-bold text-slate-600 sticky left-0 z-20 bg-white border-r border-slate-200 row-header-no">
+                {{ r.anggota.nomor_absen|default:forloop.counter }}
+              </td>
+
+              <!-- Sticky Left: Nama Murid & NISN -->
+              <td class="py-2.5 px-4 sticky left-10 z-20 bg-white border-r-2 border-slate-300 shadow-sm row-header-name">
+                <div class="font-bold text-slate-900 text-xs truncate max-w-[190px]" title="{{ r.anggota.murid.nama_lengkap }}">
+                  {{ r.anggota.murid.nama_lengkap }}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono">
+                  NISN: {{ r.anggota.murid.nisn }} &bull; {{ r.anggota.murid.jenis_kelamin }}
+                </div>
+              </td>
+
+              <!-- 15 TP Input Cells -->
+              {% for cell in r.tp_cells %}
+              <td class="p-1 text-center border-r border-slate-200 tp-cell-container" id="cell_{{ r.anggota.id }}_{{ cell.tp_num }}">
+                <input type="number" step="0.1" min="0" max="100" 
+                       id="tp_{{ r.anggota.id }}_{{ cell.tp_num }}"
+                       name="murid_{{ r.anggota.id }}_tp_{{ cell.tp_num }}" 
+                       value="{{ cell.value }}" 
+                       data-row="{{ forloop.parentloop.counter0 }}" 
+                       data-col="{{ cell.tp_num }}"
+                       data-anggota-id="{{ r.anggota.id }}"
+                       placeholder="-"
+                       class="excel-input tp-input w-12 h-8 text-center text-xs font-mono font-bold text-slate-800 bg-white border border-slate-200 hover:border-slate-400 focus:border-emerald-500 rounded focus:bg-emerald-50/30 focus:ring-2 focus:ring-emerald-500/20 outline-none transition">
+              </td>
+              {% endfor %}
+
+              <!-- Nilai Akhir (Rata-rata Terhitung) -->
+              <td class="py-2 px-2 text-center bg-slate-50 border-r border-slate-200">
+                <input type="text" readonly
+                       id="na_{{ r.anggota.id }}" 
+                       name="murid_{{ r.anggota.id }}_nilai" 
+                       value="{{ r.nilai.nilai_angka|default:'' }}" 
+                       placeholder="-"
+                       class="w-16 h-8 text-center font-mono font-black text-xs bg-slate-100 text-slate-900 border border-slate-300 rounded-lg outline-none select-all">
+              </td>
+
+              <!-- Predikat Badge -->
+              <td class="py-2 px-2 text-center bg-slate-50 border-r border-slate-200">
+                <span id="pred_{{ r.anggota.id }}" class="inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs 
+                  {% if r.nilai.predikat == 'A' %}bg-emerald-100 text-emerald-800 border border-emerald-300
+                  {% elif r.nilai.predikat == 'B' %}bg-blue-100 text-blue-800 border border-blue-300
+                  {% elif r.nilai.predikat == 'C' %}bg-amber-100 text-amber-800 border border-amber-300
+                  {% elif r.nilai.predikat == 'D' %}bg-rose-100 text-rose-800 border border-rose-300
+                  {% else %}bg-slate-100 text-slate-400 border border-slate-200{% endif %}">
+                  {{ r.nilai.predikat|default:"-" }}
+                </span>
+              </td>
+
+              <!-- Capaian Tertinggi -->
+              <td class="py-2 px-2.5 bg-emerald-50/20 border-r border-slate-200">
+                <textarea id="tert_{{ r.anggota.id }}" 
+                          name="murid_{{ r.anggota.id }}_tertinggi" 
+                          rows="2" 
+                          placeholder="Dirumuskan otomatis dari TP tertinggi..." 
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 focus:border-emerald-500 rounded-lg text-[11px] leading-relaxed text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none">{{ r.nilai.capaian_tertinggi|default:'' }}</textarea>
+              </td>
+
+              <!-- Capaian Terendah / Bimbingan -->
+              <td class="py-2 px-2.5 bg-rose-50/20 border-r border-slate-200">
+                <textarea id="perlu_{{ r.anggota.id }}" 
+                          name="murid_{{ r.anggota.id }}_perlu" 
+                          rows="2" 
+                          placeholder="Dirumuskan otomatis dari TP terendah..." 
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 focus:border-rose-400 rounded-lg text-[11px] leading-relaxed text-slate-800 focus:ring-1 focus:ring-rose-500 outline-none">{{ r.nilai.capaian_perlu_bimbingan|default:'' }}</textarea>
+              </td>
+
+              <!-- Tombol Asisten AI -->
+              <td class="py-2 px-2 text-center bg-white">
+                <button type="button" 
+                        onclick="generateAiForRow('{{ r.anggota.id }}')" 
+                        id="btn_ai_{{ r.anggota.id }}"
+                        title="Generate saran & poles narasi capaian dengan Asisten AI Qwen Instruct"
+                        class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center justify-center gap-1 mx-auto">
+                  <span>✨ AI</span>
+                </button>
+              </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="22" class="p-12 text-center text-slate-400">
+                Belum ada murid yang terdaftar di kelas ini.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Footer Bar -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="text-xs text-slate-500">
+          Total: <strong>{{ row_data|length }}</strong> Murid &bull; Tersimpan di Database & Otomatis Terhubung ke Dokumen Rapor Resmi
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="submitMatrixForm()" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Simpan Seluruh Nilai Matriks
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </form>
+
 </div>
+
+<!-- SCRIPT LOGIKA EXCEL SPREADSHEET & PERHITUNGAN TP REALTIME -->
+<script>
+const TP_DESCRIPTIONS = JSON.parse('{{ tp_descriptions_json|escapejs }}');
+const CSRF_TOKEN = '{{ csrf_token }}';
+const API_AI_URL = "{% url 'api_generate_capaian_ai' %}";
+const PEMBELAJARAN_ID = "{{ pembelajaran.id }}";
+
+// Toggle Accordion Keterangan TP
+function toggleTpAccordion() {
+  const panel = document.getElementById('panelAccordionTp');
+  const label = document.getElementById('labelAccordionTp');
+  if (panel.classList.contains('hidden')) {
+    panel.classList.remove('hidden');
+    label.innerText = 'Tutup Keterangan TP';
+  } else {
+    panel.classList.add('hidden');
+    label.innerText = 'Keterangan TP (1-15)';
+  }
+}
+
+// Submit Form
+function submitMatrixForm() {
+  document.getElementById('matrixForm').submit();
+}
+
+// Realtime Calculation per Row
+function calculateRow(anggotaId) {
+  const tpValues = {};
+  let filledCount = 0;
+  let totalScore = 0;
+
+  for (let i = 1; i <= 15; i++) {
+    const input = document.getElementById('tp_' + anggotaId + '_' + i);
+    const container = document.getElementById('cell_' + anggotaId + '_' + i);
+    if (!input) continue;
+
+    // Bersihkan highlight lama
+    container.classList.remove('bg-emerald-100/60', 'bg-rose-100/60');
+
+    const valStr = input.value.trim().replace(',', '.');
+    if (valStr !== "") {
+      const val = parseFloat(valStr);
+      if (!isNaN(val) && val >= 0 && val <= 100) {
+        tpValues[i] = val;
+        totalScore += val;
+        filledCount++;
+      }
+    }
+  }
+
+  const naInput = document.getElementById('na_' + anggotaId);
+  const predBadge = document.getElementById('pred_' + anggotaId);
+  const tertText = document.getElementById('tert_' + anggotaId);
+  const perluText = document.getElementById('perlu_' + anggotaId);
+
+  if (filledCount === 0) {
+    if (naInput) naInput.value = "";
+    if (predBadge) {
+      predBadge.innerText = "-";
+      predBadge.className = "inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs bg-slate-100 text-slate-400 border border-slate-200";
+    }
+    return;
+  }
+
+  // Hitung Nilai Akhir (Rata-rata)
+  const avg = totalScore / filledCount;
+  const avgFixed = avg.toFixed(2);
+  if (naInput) naInput.value = avgFixed;
+
+  // Tentukan Predikat KKTP
+  let predikat = 'D';
+  let badgeClass = "bg-rose-100 text-rose-800 border border-rose-300";
+  if (avg >= 88) {
+    predikat = 'A';
+    badgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-300";
+  } else if (avg >= 76) {
+    predikat = 'B';
+    badgeClass = "bg-blue-100 text-blue-800 border border-blue-300";
+  } else if (avg >= 65) {
+    predikat = 'C';
+    badgeClass = "bg-amber-100 text-amber-800 border border-amber-300";
+  }
+
+  if (predBadge) {
+    predBadge.innerText = predikat;
+    predBadge.className = "inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs " + badgeClass;
+  }
+
+  // Cari TP Tertinggi dan Terendah
+  let maxTp = null;
+  let maxVal = -1;
+  let minTp = null;
+  let minVal = 999;
+
+  for (const [tpNumStr, val] of Object.entries(tpValues)) {
+    const tpNum = parseInt(tpNumStr);
+    if (val > maxVal) {
+      maxVal = val;
+      maxTp = tpNum;
+    }
+    if (val < minVal) {
+      minVal = val;
+      minTp = tpNum;
+    }
+  }
+
+  // Highlight sel tertinggi & terendah
+  if (maxTp) {
+    const maxContainer = document.getElementById('cell_' + anggotaId + '_' + maxTp);
+    if (maxContainer) maxContainer.classList.add('bg-emerald-100/60');
+  }
+  if (minTp && minTp !== maxTp && filledCount > 1) {
+    const minContainer = document.getElementById('cell_' + anggotaId + '_' + minTp);
+    if (minContainer) minContainer.classList.add('bg-rose-100/60');
+  }
+
+  // Rumuskan Narasi Capaian Tertinggi
+  const maxDesc = TP_DESCRIPTIONS[maxTp] || ("materi tujuan pembelajaran ke-" + maxTp);
+  let prefixMax = "Murid menunjukkan penguasaan yang sangat baik dalam";
+  if (maxVal < 76) {
+    prefixMax = "Murid cukup mampu dalam";
+  } else if (maxVal < 88) {
+    prefixMax = "Murid menunjukkan penguasaan yang baik dalam";
+  }
+
+  let cleanMax = maxDesc.trim();
+  if (cleanMax.length > 0) {
+    cleanMax = cleanMax.charAt(0).toLowerCase() + cleanMax.slice(1);
+  }
+  const rumusanTertinggi = cleanMax.startsWith("murid ") ? maxDesc : `${prefixMax} ${cleanMax}.`;
+
+  // Update hanya jika belum disunting manual secara drastis
+  if (tertText && (!tertText.value.trim() || tertText.value.startsWith("Murid menunjukkan") || tertText.value.startsWith("Murid cukup") || tertText.value.startsWith("Murid mulai"))) {
+    tertText.value = rumusanTertinggi;
+  }
+
+  // Rumuskan Narasi Capaian Terendah / Bimbingan
+  if (filledCount > 1 && minTp) {
+    const minDesc = TP_DESCRIPTIONS[minTp] || ("materi tujuan pembelajaran ke-" + minTp);
+    let prefixMin = "Murid perlu bimbingan dalam";
+    if (minVal >= 88) {
+      prefixMin = "Murid menunjukkan penguasaan yang baik dalam";
+    } else if (minVal >= 76) {
+      prefixMin = "Murid perlu penguatan dan pendampingan dalam";
+    }
+
+    let cleanMin = minDesc.trim();
+    if (cleanMin.length > 0) {
+      cleanMin = cleanMin.charAt(0).toLowerCase() + cleanMin.slice(1);
+    }
+    const rumusanPerlu = cleanMin.startsWith("murid ") ? minDesc : `${prefixMin} ${cleanMin}.`;
+
+    if (perluText && (!perluText.value.trim() || perluText.value.startsWith("Murid perlu") || perluText.value.startsWith("Murid menunjukkan"))) {
+      perluText.value = rumusanPerlu;
+    }
+  } else if (filledCount === 1) {
+    if (perluText && (perluText.value.startsWith("Murid perlu") || perluText.value.startsWith("Murid menunjukkan"))) {
+      perluText.value = "";
+    }
+  }
+}
+
+// Recalculate All Rows
+function recalculateAllRows() {
+  const rows = document.querySelectorAll('.student-row');
+  rows.forEach(row => {
+    const anggotaId = row.getAttribute('data-anggota-id');
+    calculateRow(anggotaId);
+  });
+}
+
+// Generate AI for a Row
+async function generateAiForRow(anggotaId) {
+  const btn = document.getElementById('btn_ai_' + anggotaId);
+  const tertText = document.getElementById('tert_' + anggotaId);
+  const perluText = document.getElementById('perlu_' + anggotaId);
+  const naInput = document.getElementById('na_' + anggotaId);
+
+  // Kumpulkan TP
+  const tpScores = {};
+  for (let i = 1; i <= 15; i++) {
+    const inp = document.getElementById('tp_' + anggotaId + '_' + i);
+    if (inp && inp.value.trim() !== '') {
+      tpScores[i] = parseFloat(inp.value.trim().replace(',', '.'));
+    }
+  }
+
+  if (Object.keys(tpScores).length === 0 && (!naInput || !naInput.value.trim())) {
+    alert("Silakan isi nilai pada minimal satu kolom TP terlebih dahulu sebelum memanggil Asisten AI.");
+    return;
+  }
+
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="animate-spin text-xs">⏳</span><span class="text-[10px]">Memproses...</span>`;
+
+  try {
+    const response = await fetch(API_AI_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({
+        pembelajaran_id: PEMBELAJARAN_ID,
+        anggota_id: anggotaId,
+        tp_scores: tpScores
+      })
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      if (tertText && result.tertinggi) {
+        tertText.value = result.tertinggi;
+        tertText.classList.add('bg-purple-50');
+        setTimeout(() => tertText.classList.remove('bg-purple-50'), 1500);
+      }
+      if (perluText && result.perlu) {
+        perluText.value = result.perlu;
+        perluText.classList.add('bg-purple-50');
+        setTimeout(() => perluText.classList.remove('bg-purple-50'), 1500);
+      }
+      btn.innerHTML = `<span>✅ Selesai</span>`;
+      btn.classList.add('bg-emerald-100', 'text-emerald-800');
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800');
+        btn.disabled = false;
+      }, 2500);
+    } else {
+      alert("Pemberitahuan: " + (result.message || "Gagal memproses narasi AI."));
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
+  } catch (err) {
+    console.error("AI Error:", err);
+    // Jalankan kalkulasi lokal jika fetch error
+    calculateRow(anggotaId);
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+  }
+}
+
+// EXCEL KEYBOARD NAVIGATION
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = document.querySelectorAll('.excel-input');
+  
+  inputs.forEach(input => {
+    // Realtime calculation saat input berubah
+    input.addEventListener('input', function() {
+      const anggotaId = this.getAttribute('data-anggota-id');
+      calculateRow(anggotaId);
+    });
+
+    // Navigasi Keyboard Panah & Enter layaknya Excel
+    input.addEventListener('keydown', function(e) {
+      const currentRow = parseInt(this.getAttribute('data-row'));
+      const currentCol = parseInt(this.getAttribute('data-col'));
+
+      let targetInput = null;
+
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        // Pindah ke murid berikutnya (baris bawah, kolom TP sama)
+        e.preventDefault();
+        targetInput = document.querySelector(`.excel-input[data-row="${currentRow + 1}"][data-col="${currentCol}"]`);
+      } else if (e.key === 'ArrowUp') {
+        // Pindah ke murid sebelumnya (baris atas, kolom TP sama)
+        e.preventDefault();
+        targetInput = document.querySelector(`.excel-input[data-row="${currentRow - 1}"][data-col="${currentCol}"]`);
+      } else if (e.key === 'ArrowRight' && (this.selectionStart === this.value.length || this.value === "")) {
+        // Pindah ke TP berikutnya (kolom kanan, baris sama)
+        if (currentCol < 15) {
+          e.preventDefault();
+          targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${currentCol + 1}"]`);
+        }
+      } else if (e.key === 'ArrowLeft' && this.selectionStart === 0) {
+        // Pindah ke TP sebelumnya (kolom kiri, baris sama)
+        if (currentCol > 1) {
+          e.preventDefault();
+          targetInput = document.querySelector(`.excel-input[data-row="${currentRow}"][data-col="${currentCol - 1}"]`);
+        }
+      }
+
+      if (targetInput) {
+        targetInput.focus();
+        targetInput.select();
+      }
+    });
+  });
+
+  // Highlight initial max & min TP pada baris yang sudah ada nilainya
+  document.querySelectorAll('.student-row').forEach(row => {
+    const anggotaId = row.getAttribute('data-anggota-id');
+    let hasTp = false;
+    for (let i = 1; i <= 15; i++) {
+      const inp = document.getElementById('tp_' + anggotaId + '_' + i);
+      if (inp && inp.value.trim() !== '') {
+        hasTp = true;
+        break;
+      }
+    }
+    if (hasTp) {
+      calculateRow(anggotaId);
+    }
+  });
+});
+</script>
+
+<style>
+/* Hilangkan spinner default browser pada input number agar sel kompak layaknya Excel */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Row hover effect synchronizer for sticky columns */
+.student-row:hover .row-header-no,
+.student-row:hover .row-header-name {
+  background-color: #f8fafc;
+}
+</style>
 {% endblock %}
