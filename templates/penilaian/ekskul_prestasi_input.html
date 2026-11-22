@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Ekskul & Prestasi: {{ anggota.murid.nama_lengkap }} - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Ekstrakurikuler & Prestasi Murid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    Kelas {{ anggota.kelas.nama }} &bull; Absen #{{ anggota.nomor_absen }}
+                </span>
+                <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ anggota.murid.nama_lengkap }}</h2>
+                <p class="text-xs text-slate-500 font-mono">
+                    NISN: {{ anggota.murid.nisn }} &bull; Semester {{ sem_aktif.semester }} (T.A. {{ sem_aktif.tahun_ajaran.nama }})
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'nilai_matrix' %}?kelas={{ anggota.kelas.id }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                    &larr; Kembali ke Matriks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Bagian 1: Ekstrakurikuler (Maksimal 6 Baris - Halaman 4) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">A. Ekstrakurikuler (Maksimal 6 Baris - Halaman 4)</h3>
+                    <p class="text-xs text-slate-500">Pramuka, Renang, Outbond, dan kegiatan ekstrakurikuler pilihan lainnya.</p>
+                </div>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">6 Baris Kuota</span>
+            </div>
+
+            <div class="p-6 space-y-4">
+                {% for s in ekskul_slots %}
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <div class="md:col-span-1 text-center font-bold text-slate-400 font-mono text-sm">
+                        #{{ s.urutan }}
+                    </div>
+                    <div class="md:col-span-4">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Kegiatan</label>
+                        <input type="text" name="ekskul_{{ s.urutan }}_kegiatan" value="{{ s.item.kegiatan|default:'' }}"
+                            placeholder="Contoh: Pramuka / Renang / Outbond"
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Predikat</label>
+                        <select name="ekskul_{{ s.urutan }}_predikat" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="A" {% if s.item and s.item.predikat == 'A' %}selected{% endif %}>A (Sangat Baik)</option>
+                            <option value="B" {% if s.item and s.item.predikat == 'B' %}selected{% endif %}>B (Baik)</option>
+                            <option value="C" {% if s.item and s.item.predikat == 'C' %}selected{% endif %}>C (Cukup)</option>
+                            <option value="-" {% if not s.item or s.item.predikat == '-' %}selected{% endif %}>-</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Keterangan Capaian</label>
+                        <input type="text" name="ekskul_{{ s.urutan }}_keterangan" value="{{ s.item.keterangan|default:'' }}"
+                            placeholder="Contoh: Aktif dan terampil dalam kegiatan kepanduan siaga"
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Bagian 2: Prestasi Murid (Maksimal 6 Baris - Halaman 5) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">B. Prestasi & Penghargaan (Maksimal 6 Baris - Halaman 5)</h3>
+                    <p class="text-xs text-slate-500">
+                        Prestasi akademik/non-akademik. Kolom Jenis Prestasi 38% lebar kertas (wrap alami), Keterangan 57% lebar (justify).
+                    </p>
+                </div>
+                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">6 Baris Kuota</span>
+            </div>
+
+            <div class="p-6 space-y-4">
+                {% for s in prestasi_slots %}
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <div class="md:col-span-1 text-center font-bold text-slate-400 font-mono text-sm">
+                        #{{ s.urutan }}
+                    </div>
+                    <div class="md:col-span-5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jenis Prestasi (38% Lebar Kolom)</label>
+                        <input type="text" name="prestasi_{{ s.urutan }}_jenis" value="{{ s.item.jenis_prestasi|default:'' }}"
+                            placeholder="Contoh: Kangaroo Math Contest Indonesia"
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div class="md:col-span-6">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Keterangan / Tingkat / Juara (57% Lebar Kolom)</label>
+                        <input type="text" name="prestasi_{{ s.urutan }}_keterangan" value="{{ s.item.keterangan|default:'' }}"
+                            placeholder="Contoh: Meraih predikat Honorable Mention tingkat Nasional tahun 2026."
+                            class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pb-8">
+            <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Simpan Ekskul & Prestasi ({{ anggota.murid.nama_lengkap }})
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

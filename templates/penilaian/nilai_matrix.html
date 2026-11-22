@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Matriks Penilaian Rapor - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Matriks Kelengkapan Penilaian Rapor{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filter Kelas & Info -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <form method="get" class="flex flex-wrap items-center gap-3">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Rombel / Kelas:</label>
+            <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                {% for k in kelas_list %}
+                <option value="{{ k.id }}" {% if selected_kelas and selected_kelas.id == k.id %}selected{% endif %}>
+                    Kelas {{ k.nama }} (Fase {{ k.fase.kode }})
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        {% if selected_kelas %}
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="{% url 'kokurikuler_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-bold border border-blue-200 transition-colors">
+                Input Kokurikuler
+            </a>
+            <a href="{% url 'rekap_absen_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg font-bold border border-purple-200 transition-colors">
+                Input Presensi
+            </a>
+            <a href="{% url 'catatan_wali_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold border border-amber-200 transition-colors">
+                Catatan Wali Kelas
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if selected_kelas %}
+    <!-- Daftar Mata Pelajaran & Aksi Input -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">
+                    11 Mata Pelajaran Resmi &bull; Kelas {{ selected_kelas.nama }}
+                </h3>
+                <p class="text-xs text-slate-500">Klik 'Input / Kelola Nilai' untuk mengisi nilai akhir & capaian kompetensi.</p>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                {{ anggota_list|length }} Murid Terdaftar
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-4 w-28">Kelompok</th>
+                        <th class="py-3 px-4">Nama Mata Pelajaran</th>
+                        <th class="py-3 px-4">Guru Pengampu</th>
+                        <th class="py-3 px-4 text-center w-36">Status Terisi</th>
+                        <th class="py-3 px-4 text-right w-44">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in pembelajaran_list %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ p.mata_pelajaran.urutan }}</td>
+                        <td class="py-3 px-4">
+                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold 
+                                {% if p.mata_pelajaran.kategori == 'UMUM' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                {% elif p.mata_pelajaran.kategori == 'PILIHAN' %}bg-blue-50 text-blue-700 border border-blue-200
+                                {% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                                {{ p.mata_pelajaran.kategori }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ p.mata_pelajaran.nama }}</td>
+                        <td class="py-3 px-4 text-slate-600 text-xs">{{ p.guru_pengampu.nama_lengkap }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-700">
+                                {{ p.nilai_list.count }} / {{ anggota_list|length }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="{% url 'nilai_mupel_input' pembelajaran_id=p.id %}" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors border border-emerald-200">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                Input / Edit Nilai
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="py-8 text-center text-slate-400">Belum ada jadwal pembelajaran aktif.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Data Murid & Ekstrakurikuler / Prestasi Individual -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+            <h3 class="font-bold text-slate-800 text-base">Penilaian Ekskul & Prestasi Per Murid (Halaman 4 & 5)</h3>
+            <p class="text-xs text-slate-500">Kelola 6 baris ekstrakurikuler dan 6 baris prestasi spesifik untuk tiap murid.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">Absen</th>
+                        <th class="py-3 px-4 w-28">NISN</th>
+                        <th class="py-3 px-4">Nama Murid</th>
+                        <th class="py-3 px-4 text-center">Ekskul Terisi</th>
+                        <th class="py-3 px-4 text-center">Prestasi Terisi</th>
+                        <th class="py-3 px-4 text-right w-44">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for a in anggota_list %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ a.nomor_absen|default:forloop.counter }}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-600">{{ a.murid.nisn }}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ a.murid.nama_lengkap }}</td>
+                        <td class="py-3 px-4 text-center font-mono text-xs text-slate-700">{{ a.nilai_ekskul_list.count }} / 6</td>
+                        <td class="py-3 px-4 text-center font-mono text-xs text-slate-700">{{ a.prestasi_list.count }} / 6</td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="{% url 'ekskul_prestasi_input' anggota_id=a.id %}" class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors border border-blue-200">
+                                Ekskul & Prestasi
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada murid di kelas ini.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

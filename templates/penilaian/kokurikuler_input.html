@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Penilaian Kokurikuler Kelas {{ kelas.nama }} - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Penilaian Kokurikuler (Pembiasaan Islami & P5){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                    Halaman 3 Rapor Resmi
+                </span>
+                <h2 class="text-2xl font-bold text-slate-800 mt-1">Kokurikuler Kelas {{ kelas.nama }}</h2>
+                <p class="text-xs text-slate-500">
+                    Aspek pembiasaan ibadah (sholat dhuha & sholat berjamaah), tahfidz Al-Qur'an, adab makan islami, dan sportivitas.
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                    &larr; Kembali ke Matriks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Input Kokurikuler -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {% csrf_token %}
+
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-base">Daftar Penilaian Kokurikuler Murid</h3>
+            <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Simpan Penilaian Kokurikuler
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            {% for r in row_data %}
+            <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col md:flex-row items-start md:items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-800 font-bold text-sm flex items-center justify-center shrink-0">
+                    {{ r.anggota.nomor_absen|default:forloop.counter }}
+                </div>
+                
+                <div class="w-full md:w-56 shrink-0">
+                    <h4 class="font-bold text-slate-900 text-sm">{{ r.anggota.murid.nama_lengkap }}</h4>
+                    <p class="text-[11px] text-slate-400 font-mono">NISN: {{ r.anggota.murid.nisn }}</p>
+                </div>
+
+                <div class="w-full md:w-40 shrink-0">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Predikat</label>
+                    <select name="koku_{{ r.anggota.id }}_predikat" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="A" {% if r.predikat == 'A' %}selected{% endif %}>Sangat Baik (A)</option>
+                        <option value="B" {% if r.predikat == 'B' %}selected{% endif %}>Baik (B)</option>
+                        <option value="C" {% if r.predikat == 'C' %}selected{% endif %}>Cukup (C)</option>
+                        <option value="D" {% if r.predikat == 'D' %}selected{% endif %}>Perlu Bimbingan (D)</option>
+                    </select>
+                </div>
+
+                <div class="w-full md:flex-1">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Deskripsi Narasi Kokurikuler</label>
+                    <textarea name="koku_{{ r.anggota.id }}_deskripsi" rows="2"
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">{{ r.deskripsi }}</textarea>
+                </div>
+            </div>
+            {% empty %}
+            <div class="py-8 text-center text-slate-400">Belum ada murid di kelas ini.</div>
+            {% endfor %}
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Simpan Penilaian Kokurikuler Kelas {{ kelas.nama }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

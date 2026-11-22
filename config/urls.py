@@ -12,6 +12,8 @@ urlpatterns = [
     path('', include('apps.core.urls')),
     path('akademik/', include('apps.master_akademik.urls')),
     path('kurikulum/', include('apps.kurikulum.urls')),
+    path('penilaian/', include('apps.penilaian.urls')),
+    path('ai-asisten/', include('apps.ai_assistant.urls')),
 ]
 
 if settings.DEBUG:
