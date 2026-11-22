@@ -1,0 +1,563 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapor {{ murid.nama_lengkap }} - e-Rapor eLHaEs</title>
+  
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #f1f5f9;
+      color: #000;
+      font-family: 'Times New Roman', Times, serif !important;
+      font-size: 12pt !important;
+      line-height: 1.5 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* KONTROL CETAK ATAS (HILANG SAAT DI-PRINT) */
+    .print-control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-family: system-ui, -apple-system, sans-serif !important;
+      font-size: 13px !important;
+    }
+    .print-btn {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .print-btn:hover { background: #047857; }
+    .close-btn {
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .close-btn:hover { background: #475569; color: white; }
+
+    /* KERTAS A4 BAKU: 210 x 297 mm
+       MARGIN WAJIB: Atas 1.9cm, Kiri 1.9cm, Kanan 1.9cm, Bawah 2.0cm (BATAS BEBAS TINTA) */
+    .paper-a4 {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      padding: 1.9cm 1.9cm 2.0cm 1.9cm;
+      margin: 20px auto;
+      background: #ffffff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+      font-family: 'Times New Roman', Times, serif !important;
+      font-size: 12pt !important;
+      line-height: 1.5 !important;
+      color: #000;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .paper-a4:last-of-type {
+      page-break-after: avoid;
+      break-after: avoid;
+      margin-bottom: 40px;
+    }
+
+    /* ATURAN TABEL & LEBAR KOLOM TERKUNCI */
+    .doc-table {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+    }
+    .doc-table th, .doc-table td {
+      border: 1px solid #000;
+      font-family: 'Times New Roman', Times, serif !important;
+      font-size: 12pt !important;
+      line-height: 1.5 !important;
+      vertical-align: middle;
+      padding: 3px 5px;
+    }
+    .doc-table thead {
+      display: table-header-group;
+      break-inside: avoid;
+    }
+    .doc-table tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .text-justify {
+      text-align: justify;
+      text-justify: inter-word;
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 2.0cm;
+      right: 1.9cm;
+      font-style: italic;
+      font-size: 10pt;
+      color: #64748b;
+    }
+
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+      .no-print, .print-control-bar {
+        display: none !important;
+      }
+      .paper-a4 {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        padding: 1.9cm 1.9cm 2.0cm 1.9cm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .paper-a4:last-of-type {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .page-number {
+        color: #475569 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Control Bar Atas -->
+  <div class="print-control-bar no-print">
+    <div>
+      <strong>Laporan Hasil Belajar (Rapor 6 Halaman)</strong> &mdash; {{ murid.nama_lengkap }} (Kelas {{ kelas.nama }})
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="window.print()" class="print-btn">
+        <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        Cetak Sekarang (Ctrl + P)
+      </button>
+      <button onclick="window.close()" class="close-btn">Tutup</button>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 1 DARI 6: KOP SEKOLAH, IDENTITAS MURID, MUPEL UMUM 1 - 4          -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <!-- Kop Banner Sekolah (62px) -->
+    <div style="text-align: center; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 14px; border-bottom: 2px solid #000; padding-bottom: 6px;">
+        <img src="{% static 'img/logo_sdit_lhs.png' %}" alt="Logo SDIT LHS" style="height: 58px; object-fit: contain;">
+        <div style="text-align: center; line-height: 1.2;">
+          <div style="font-size: 13pt; font-weight: bold; text-transform: uppercase;">SD ISLAM TERPADU LUQMAN AL HAKIM SLEMAN</div>
+          <div style="font-size: 10pt;">Jl. Palagan Tentara Pelajar No. 52 Sedan, Sariharjo, Ngaglik, Sleman, D.I. Yogyakarta 55581</div>
+          <div style="font-size: 9pt;">NPSN: 69957218 &bull; Website: luqmanalhakim.sch.id &bull; Telp: (0274) 869666</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; font-weight: bold; font-size: 12pt; margin: 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+      LAPORAN HASIL BELAJAR
+    </div>
+
+    <!-- Identitas Murid & Sekolah -->
+    <table style="width: 100%; border: none; margin-bottom: 8px; font-size: 11pt; line-height: 1.35;">
+      <tbody>
+        <tr>
+          <td style="width: 15%; vertical-align: top; border: none; padding: 1px 0;">Nama Murid</td>
+          <td style="width: 2%; vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="width: 43%; vertical-align: top; font-weight: bold; border: none; padding: 1px 0;">{{ murid.nama_lengkap }}</td>
+          
+          <td style="width: 16%; vertical-align: top; border: none; padding: 1px 0; padding-left: 10px;">Kelas</td>
+          <td style="width: 2%; vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="width: 22%; vertical-align: top; border: none; padding: 1px 0;">{{ kelas.nama }}</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">NIS / NISN</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ murid.nis }} / {{ murid.nisn }}</td>
+          
+          <td style="vertical-align: top; border: none; padding: 1px 0; padding-left: 10px;">Fase</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ kelas.fase.kode }}</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">Sekolah</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ sekolah.nama }}</td>
+          
+          <td style="vertical-align: top; border: none; padding: 1px 0; padding-left: 10px;">Semester</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ sem.semester }} ({{ sem.get_semester_display }})</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">Alamat</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ sekolah.alamat }}</td>
+          
+          <td style="vertical-align: top; border: none; padding: 1px 0; padding-left: 10px;">Tahun Ajaran</td>
+          <td style="vertical-align: top; text-align: center; border: none; padding: 1px 0;">:</td>
+          <td style="vertical-align: top; border: none; padding: 1px 0;">{{ ta.nama }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Tabel Mata Pelajaran Umum (Baris 1 - 4) -->
+    <table class="doc-table">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Mata Pelajaran</th>
+          <th style="width: 11%; line-height: 1.1;">Nilai<br>Akhir</th>
+          <th style="width: 57%;">Capaian Kompetensi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mupel_hal1 %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ m.no }}</td>
+          <td style="vertical-align: middle;">{{ m.nama }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ m.nilai_angka }}</td>
+          <td style="padding: 0; vertical-align: middle;">
+            <div style="padding: 3px 5px; border-bottom: 1px solid #000;" class="text-justify">{{ m.tertinggi }}</div>
+            {% if m.perlu %}
+            <div style="padding: 3px 5px;" class="text-justify">{{ m.perlu }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="page-number">Halaman 1 dari 6</div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 2 DARI 6: LANJUTAN MUPEL UMUM 5 - 8 (THEAD BERULANG OTOMATIS)    -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <!-- Tabel Mata Pelajaran Umum (Baris 5 - 8) -->
+    <table class="doc-table">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Mata Pelajaran</th>
+          <th style="width: 11%; line-height: 1.1;">Nilai<br>Akhir</th>
+          <th style="width: 57%;">Capaian Kompetensi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mupel_hal2 %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ m.no }}</td>
+          <td style="vertical-align: middle;">{{ m.nama }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ m.nilai_angka }}</td>
+          <td style="padding: 0; vertical-align: middle;">
+            <div style="padding: 3px 5px; border-bottom: 1px solid #000;" class="text-justify">{{ m.tertinggi }}</div>
+            {% if m.perlu %}
+            <div style="padding: 3px 5px;" class="text-justify">{{ m.perlu }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="page-number">Halaman 2 dari 6</div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 3 DARI 6: MUPEL PILIHAN (9, 10), MULOK (11), KOKURIKULER (1)      -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <!-- Tabel Mata Pelajaran Pilihan (9 - 10) -->
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">MATA PELAJARAN PILIHAN</div>
+    <table class="doc-table" style="margin-bottom: 14px;">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Aspek</th>
+          <th style="width: 11%; line-height: 1.1;">Nilai<br>Akhir</th>
+          <th style="width: 57%;">Deskripsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mupel_pilihan %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ m.no }}</td>
+          <td style="vertical-align: middle;">{{ m.nama }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ m.nilai_angka }}</td>
+          <td style="padding: 0; vertical-align: middle;">
+            <div style="padding: 3px 5px; border-bottom: 1px solid #000;" class="text-justify">{{ m.tertinggi }}</div>
+            {% if m.perlu %}
+            <div style="padding: 3px 5px;" class="text-justify">{{ m.perlu }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Tabel Muatan Lokal (11) -->
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">MUATAN LOKAL</div>
+    <table class="doc-table" style="margin-bottom: 14px;">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Muatan Pelajaran</th>
+          <th style="width: 11%; line-height: 1.1;">Nilai<br>Akhir</th>
+          <th style="width: 57%;">Capaian Kompetensi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mupel_mulok %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ m.no }}</td>
+          <td style="vertical-align: middle;">{{ m.nama }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ m.nilai_angka }}</td>
+          <td style="padding: 0; vertical-align: middle;">
+            <div style="padding: 3px 5px; border-bottom: 1px solid #000;" class="text-justify">{{ m.tertinggi }}</div>
+            {% if m.perlu %}
+            <div style="padding: 3px 5px;" class="text-justify">{{ m.perlu }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Kokurikuler (1 Aspek) -->
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">KOKURIKULER</div>
+    <table class="doc-table">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Aspek</th>
+          <th style="width: 11%;">Predikat</th>
+          <th style="width: 57%;">Deskripsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">1</td>
+          <td style="vertical-align: middle;">{{ koku_obj.aspek|default:"Kokurikuler" }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ koku_obj.predikat|default:"A" }}</td>
+          <td style="vertical-align: middle;" class="text-justify">
+            {{ koku_obj.deskripsi|default:"Murid sangat baik dalam membiasakan sholat dhuha tepat waktu, sangat tertib dalam sholat berjamaah lima waktu di masjid sekolah, antusias mengikuti senam pagi ceria, konsisten membiasakan adab makan sehat halalan thoyyiban sambil duduk dan berdoa, serta aktif berolahraga dengan penuh sportivitas." }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-number">Halaman 3 dari 6</div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 4 DARI 6: CATATAN WALI KELAS & EKSTRAKURIKULER (6 BARIS)          -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <!-- Catatan Wali Kelas (Boks Rata Justify) -->
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">CATATAN WALI KELAS</div>
+    <div style="border: 1px solid #000; padding: 8px 10px; margin-bottom: 16px; line-height: 1.5;" class="text-justify">
+      {{ catatan_obj.catatan|default:"Alhamdulillaah, ananda Arhan menunjukkan semangat belajar dan pembiasaan adab yang sangat membanggakan di semester ini, khususnya dalam ketekunan sholat dhuha berjamaah dan hafalan tahfidz juz 30. Tingkatkan konsentrasi dan ketelitian dalam latihan berhitung mandiri di rumah. Semoga Allah senantiasa menjaga ananda menjadi anak yang sholih, cerdas, dan senantiasa berbakti kepada orang tua. Barakallahu fiik." }}
+    </div>
+
+    <!-- Ekstrakurikuler (6 Baris Lengkap) -->
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">EKSTRAKURIKULER</div>
+    <table class="doc-table">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 27%;">
+        <col style="width: 11%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 27%;">Kegiatan</th>
+          <th style="width: 11%; line-height: 1.1;">Predikat</th>
+          <th style="width: 57%;">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in ekskul_slots %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ s.no }}</td>
+          <td style="vertical-align: middle;">{{ s.item.kegiatan|default:"-" }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ s.item.predikat|default:"-" }}</td>
+          <td style="vertical-align: middle;" class="{% if s.item.keterangan %}text-justify{% else %}text-center{% endif %}">
+            {{ s.item.keterangan|default:"-" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="page-number">Halaman 4 dari 6</div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 5 DARI 6: PRESTASI (6 BARIS - 38% WRAP ALAMI & 57% JUSTIFY)        -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <div style="font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">PRESTASI</div>
+    <table class="doc-table">
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 38%;">
+        <col style="width: 57%;">
+      </colgroup>
+      <thead>
+        <tr style="text-align: center; font-weight: bold;">
+          <th style="width: 5%;">No</th>
+          <th style="width: 38%;">Jenis Prestasi</th>
+          <th style="width: 57%;">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in prestasi_slots %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">{{ s.no }}</td>
+          <td style="vertical-align: middle; word-break: break-word; overflow-wrap: break-word; white-space: normal;">
+            {{ s.item.jenis_prestasi|default:"-" }}
+          </td>
+          <td style="vertical-align: middle;" class="{% if s.item.keterangan %}text-justify{% else %}text-center{% endif %}">
+            {{ s.item.keterangan|default:"-" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="page-number">Halaman 5 dari 6</div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- HALAMAN 6 DARI 6: KETIDAKHADIRAN (280PX) & TANDA TANGAN DIDAMPINGI        -->
+  <!-- ========================================================================= -->
+  <div class="paper-a4">
+    <!-- Tabel Ketidakhadiran (Lebar 280px) -->
+    <div style="width: 280px; margin-bottom: 20px;">
+      <table class="doc-table" style="width: 280px;">
+        <thead>
+          <tr style="font-weight: bold;">
+            <th colspan="2" style="text-align: center;">Ketidakhadiran</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="width: 140px; padding-left: 8px;">Sakit</td>
+            <td style="width: 140px;">: {{ absen_obj.sakit|default:0 }} hari</td>
+          </tr>
+          <tr>
+            <td style="padding-left: 8px;">Izin</td>
+            <td>: {{ absen_obj.izin|default:0 }} hari</td>
+          </tr>
+          <tr>
+            <td style="padding-left: 8px;">Tanpa Keterangan</td>
+            <td>: {{ absen_obj.tanpa_keterangan|default:0 }} hari</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tanda Tangan Resmi (Mewah & Tidak Sendirian) -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; line-height: 1.5;">
+      <!-- Sisi Kiri: Orang Tua/Wali -->
+      <div style="width: 270px;">
+        <div>&nbsp;</div>
+        <div>Orang Tua/Wali,</div>
+        <!-- Ruang Tanda Tangan Lega 95px -->
+        <div style="height: 95px;"></div>
+        <div style="white-space: nowrap;">( .............................................................. )</div>
+      </div>
+
+      <!-- Sisi Kanan: Titimangsa & Wali Kelas -->
+      <div style="width: 270px; margin-left: auto;">
+        <div>{{ sem.titimangsa_tempat|default:"Sleman" }}, {{ sem.titimangsa_tanggal|date:"d F Y"|default:"18 Desember 2026" }}</div>
+        <div style="font-weight: bold;">Wali Kelas,</div>
+        <!-- Ruang Tanda Tangan Lega 95px -->
+        <div style="height: 95px;"></div>
+        <div style="font-weight: bold; white-space: nowrap;">{{ kelas.wali_kelas.nama_lengkap }}</div>
+        <div>NIP/NIY. {{ kelas.wali_kelas.nip|default:kelas.wali_kelas.niy|default:"-" }}</div>
+      </div>
+    </div>
+
+    <div class="page-number">Halaman 6 dari 6</div>
+  </div>
+
+</body>
+</html>

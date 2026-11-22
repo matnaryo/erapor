@@ -14,6 +14,7 @@ urlpatterns = [
     path('kurikulum/', include('apps.kurikulum.urls')),
     path('penilaian/', include('apps.penilaian.urls')),
     path('ai-asisten/', include('apps.ai_assistant.urls')),
+    path('cetak/', include('apps.printing.urls')),
 ]
 
 if settings.DEBUG:
