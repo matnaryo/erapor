@@ -451,14 +451,21 @@
         </tr>
       </thead>
       <tbody>
-        {% for s in ekskul_slots %}
+        {% for e in ekskul_list %}
         <tr>
-          <td style="text-align: center; vertical-align: middle;">{{ s.no }}</td>
-          <td style="vertical-align: middle;">{{ s.item.kegiatan|default:"-" }}</td>
-          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ s.item.predikat|default:"-" }}</td>
-          <td style="vertical-align: middle;" class="{% if s.item.keterangan %}text-justify{% else %}text-center{% endif %}">
-            {{ s.item.keterangan|default:"-" }}
+          <td style="text-align: center; vertical-align: middle;">{{ forloop.counter }}</td>
+          <td style="vertical-align: middle;">{{ e.kegiatan }}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">{{ e.predikat|default:"-" }}</td>
+          <td style="vertical-align: middle;" class="{% if e.keterangan %}text-justify{% else %}text-center{% endif %}">
+            {{ e.keterangan|default:"-" }}
           </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td style="text-align: center; vertical-align: middle;">-</td>
+          <td style="text-align: center; vertical-align: middle;">-</td>
+          <td style="text-align: center; vertical-align: middle;">-</td>
+          <td style="text-align: center; vertical-align: middle;">-</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -122,6 +122,14 @@ class PenilaianTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Muhammad Arhan Al-Fatih")
 
+    def test_ekskul_prestasi_kelas_view(self):
+        url = reverse('ekskul_prestasi_kelas', kwargs={'kelas_id': self.kelas_1.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertContains(response, "1 Bilal bin Rabah")
+        self.assertContains(response, "Ekstrakurikuler & Prestasi")
+
     def test_matrix_tp_post_and_save(self):
         url = reverse('nilai_mupel_input', kwargs={'pembelajaran_id': self.pembelajaran.id})
         post_data = {
@@ -156,3 +164,69 @@ class PenilaianTests(TestCase):
         self.assertIn('perlu', res_json)
         self.assertEqual(res_json['max_tp'], 1)
         self.assertEqual(res_json['min_tp'], 2)
+
+    def test_ekskul_matrix_get_and_post(self):
+        url = reverse('ekskul_matrix_kelas', kwargs={'kelas_id': self.kelas_1.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertContains(response, "Ekstrakurikuler 1")
+        self.assertContains(response, "Ekstrakurikuler 6")
+
+        # POST input ekskul
+        post_data = {
+            f'murid_{self.anggota.id}_ekskul_1_kegiatan': 'Pramuka Siaga',
+            f'murid_{self.anggota.id}_ekskul_1_predikat': 'A',
+            f'murid_{self.anggota.id}_ekskul_1_keterangan': 'Sangat aktif dalam kegiatan kepanduan.',
+            f'murid_{self.anggota.id}_ekskul_2_kegiatan': 'Panahan',
+            f'murid_{self.anggota.id}_ekskul_2_predikat': 'B',
+            f'murid_{self.anggota.id}_ekskul_2_keterangan': 'Fokus membidik sasaran dengan baik.',
+        }
+        res_post = self.client.post(url, post_data, follow=True)
+        self.assertEqual(res_post.status_code, 200)
+
+        ekskuls = EkstrakurikulerNilai.objects.filter(anggota_kelas=self.anggota).order_by('urutan')
+        self.assertEqual(ekskuls.count(), 2)
+        self.assertEqual(ekskuls[0].kegiatan, 'Pramuka Siaga')
+        self.assertEqual(ekskuls[0].predikat, 'A')
+        self.assertEqual(ekskuls[1].kegiatan, 'Panahan')
+
+    def test_kokurikuler_matrix_get_and_post(self):
+        url = reverse('kokurikuler_matrix_kelas', kwargs={'kelas_id': self.kelas_1.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertContains(response, "TP1")
+        self.assertContains(response, "TP7")
+
+        # POST input nilai TP 1-7
+        post_data = {
+            f'murid_{self.anggota.id}_tp_1': '90',
+            f'murid_{self.anggota.id}_tp_2': '85',
+            f'murid_{self.anggota.id}_tp_3': '88',
+            f'murid_{self.anggota.id}_tp_4': '92',
+            f'murid_{self.anggota.id}_tp_5': '86',
+            f'murid_{self.anggota.id}_tp_6': '84',
+            f'murid_{self.anggota.id}_tp_7': '90',
+        }
+        res_post = self.client.post(url, post_data, follow=True)
+        self.assertEqual(res_post.status_code, 200)
+
+        koku = KokurikulerNilai.objects.get(anggota_kelas=self.anggota, semester=self.sem)
+        self.assertGreater(koku.nilai_angka, 80)
+        self.assertEqual(koku.predikat, 'A')
+        self.assertEqual(koku.tp_scores.get('1'), 90.0)
+        self.assertTrue(len(koku.deskripsi) > 10)
+
+    def test_kokurikuler_tp_list_get_and_post(self):
+        url = reverse('kokurikuler_tp_list') + "?tingkat=1&sem=1"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tujuan Pembelajaran Kokurikuler")
+
+        post_data = {
+            'tp_1_kode': 'TP 1',
+            'tp_1_deskripsi': 'Membiasakan sholat dhuha berjamaah dan tartil hafalan.',
+        }
+        res_post = self.client.post(url, post_data, follow=True)
+        self.assertEqual(res_post.status_code, 200)

@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %}Matriks Penilaian Kokurikuler - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Matriks Penilaian Kokurikuler (Maks. 7 Kolom TP){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Bar: Filter Kelas & Shortcut -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
+          Dimensi P5 & Pembiasaan Islami
+        </span>
+        <span class="text-xs text-slate-500">Maksimal 7 Kolom Tujuan Pembelajaran (TP)</span>
+      </div>
+      <h2 class="text-xl font-black tracking-tight text-slate-900">
+        Matriks Kokurikuler &bull; Kelas {{ selected_kelas.nama|default:'-' }}
+      </h2>
+      <p class="text-xs text-slate-500 mt-0.5">
+        Isikan nilai per TP (1 s/d 7). Rata-rata nilai dan draf narasi capaian akan dihitung otomatis secara instan.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <form method="get" class="flex items-center gap-2">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Rombel:</label>
+        <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          {% for k in kelas_list %}
+          <option value="{{ k.id }}" {% if selected_kelas and selected_kelas.id == k.id %}selected{% endif %}>
+            Kelas {{ k.nama }} (Fase {{ k.fase.kode }})
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <a href="{% url 'kokurikuler_tp_list' %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-200">
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span>Kelola TP (1-7)</span>
+      </a>
+    </div>
+  </div>
+
+  {% if selected_kelas %}
+  <!-- Accordion Keterangan 7 TP -->
+  <div class="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 text-xs">
+    <div class="flex items-center justify-between cursor-pointer" onclick="toggleTpAccordion()">
+      <div class="flex items-center gap-2 text-blue-900 font-bold">
+        <span>ℹ️ Keterangan 7 Tujuan Pembelajaran (TP) Kokurikuler Kelas {{ selected_kelas.tingkat }}</span>
+      </div>
+      <button type="button" id="labelAccordionTp" class="text-blue-700 font-bold hover:underline">
+        Lihat Rincian TP &darr;
+      </button>
+    </div>
+    <div id="panelAccordionTp" class="hidden mt-3 pt-3 border-t border-blue-200/70 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+      {% for i in tp_range %}
+      <div class="p-2 rounded-xl bg-white border border-blue-100 text-[11px] leading-relaxed">
+        <strong class="text-blue-900">TP {{ i }}:</strong>
+        <span class="text-slate-700">{% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- SPREADSHEET FORM MATRIKS KOKURIKULER -->
+  <form id="kokurikulerMatrixForm" method="POST" action="{% url 'kokurikuler_matrix_kelas' selected_kelas.id %}">
+    {% csrf_token %}
+
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+      <!-- Toolbar Header -->
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-slate-700">Tabel Penilaian 7 TP Kokurikuler ({{ row_data|length }} Siswa)</span>
+          <span class="text-[11px] text-slate-500">&mdash; Nilai TP skala 0-100. Enter/Panah Bawah untuk baris berikutnya.</span>
+        </div>
+        <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Simpan Matriks Kokurikuler
+        </button>
+      </div>
+
+      <!-- Matrix Table -->
+      <div class="overflow-x-auto relative max-h-[750px]">
+        <table id="kokuTable" class="w-full text-left border-collapse text-xs">
+          <!-- Sticky Header -->
+          <thead class="sticky top-0 z-30 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[11px]">
+            <tr>
+              <th scope="col" class="py-3 px-3 w-10 text-center sticky left-0 z-40 bg-slate-100 border-r border-slate-200">
+                No
+              </th>
+              <th scope="col" class="py-3 px-4 min-w-[190px] w-52 sticky left-10 z-40 bg-slate-100 border-r-2 border-slate-300 shadow-xs">
+                Nama Murid
+              </th>
+
+              <!-- 7 TP Columns -->
+              {% for i in tp_range %}
+              <th scope="col" class="py-3 px-1 text-center w-14 min-w-[58px] border-r border-slate-200 hover:bg-blue-50 transition cursor-help"
+                  title="TP {{ i }}: {% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}">
+                <span class="block">TP{{ i }}</span>
+              </th>
+              {% endfor %}
+
+              <!-- Output: Rata-rata, Predikat, Deskripsi Narasi Rapor -->
+              <th scope="col" class="py-3 px-2 text-center w-20 bg-slate-200/80 border-r border-slate-300">
+                Rata-rata
+              </th>
+              <th scope="col" class="py-3 px-2 text-center w-14 bg-slate-200/80 border-r border-slate-300">
+                Pred
+              </th>
+              <th scope="col" class="py-3 px-3 min-w-[320px] bg-blue-50/80 text-blue-950 border-r border-slate-300">
+                Deskripsi Narasi Capaian Rapor (Halaman 3)
+              </th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-200 bg-white">
+            {% for r in row_data %}
+            <tr id="row_{{ r.anggota.id }}" class="hover:bg-slate-50/90 transition-colors" data-anggota-id="{{ r.anggota.id }}">
+              <!-- Absen & Nama -->
+              <td class="py-2.5 px-3 text-center font-bold text-slate-500 sticky left-0 z-20 bg-white border-r border-slate-200">
+                {{ r.anggota.nomor_absen|default:forloop.counter }}
+              </td>
+              <td class="py-2.5 px-4 font-bold text-slate-800 sticky left-10 z-20 bg-white border-r-2 border-slate-300 shadow-xs truncate" title="{{ r.anggota.murid.nama_lengkap }}">
+                {{ r.anggota.murid.nama_lengkap }}
+              </td>
+
+              <!-- 7 Input Kolom TP (1 s/d 7) -->
+              {% for i in tp_range %}
+              <td class="p-1 border-r border-slate-200 text-center">
+                <input type="text"
+                       name="murid_{{ r.anggota.id }}_tp_{{ i }}"
+                       id="tp_{{ r.anggota.id }}_{{ i }}"
+                       data-anggota="{{ r.anggota.id }}"
+                       data-tp="{{ i }}"
+                       value="{% for k, v in r.scores.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}"
+                       class="tp-cell w-full px-1 py-1.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-blue-500 rounded-md text-xs font-mono font-bold text-center text-slate-800 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                       oninput="calculateKokuRow('{{ r.anggota.id }}')"
+                       onkeydown="handleKokuKey(event, '{{ r.anggota.id }}', {{ i }})">
+              </td>
+              {% endfor %}
+
+              <!-- Rata-rata Nilai -->
+              <td class="p-1 border-r border-slate-300 bg-slate-50 text-center">
+                <input type="text"
+                       name="murid_{{ r.anggota.id }}_rata_rata"
+                       id="na_{{ r.anggota.id }}"
+                       readonly
+                       value="{{ r.rata_rata }}"
+                       class="w-full px-1 py-1.5 bg-slate-100 border border-transparent rounded text-xs font-mono font-black text-center text-blue-900 outline-none cursor-default">
+              </td>
+
+              <!-- Predikat -->
+              <td class="p-1 border-r border-slate-300 bg-slate-50 text-center">
+                <input type="text"
+                       name="murid_{{ r.anggota.id }}_predikat"
+                       id="pred_{{ r.anggota.id }}"
+                       readonly
+                       value="{{ r.predikat }}"
+                       class="w-full px-1 py-1.5 bg-slate-100 border border-transparent rounded text-xs font-mono font-black text-center text-slate-800 outline-none cursor-default">
+              </td>
+
+              <!-- Deskripsi Narasi Capaian Rapor -->
+              <td class="p-1.5">
+                <textarea name="murid_{{ r.anggota.id }}_deskripsi"
+                          id="desk_{{ r.anggota.id }}"
+                          rows="2"
+                          placeholder="Dirumuskan otomatis dari capaian TP tertinggi..."
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 focus:border-blue-400 rounded-lg text-[11px] leading-relaxed text-slate-800 focus:ring-1 focus:ring-blue-500 outline-none transition">{{ r.deskripsi }}</textarea>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="12" class="py-12 text-center text-slate-400">
+                Belum ada murid di kelas ini.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer Action -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <span class="text-xs text-slate-500">
+          💡 Predikat: A (85-100), B (75-84), C (65-74), D (&lt;65). Narasi dapat disunting manual sebelum disimpan.
+        </span>
+        <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Simpan Matriks Kokurikuler Kelas {{ selected_kelas.nama }}
+        </button>
+      </div>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<!-- CLIENT JAVASCRIPT REALTIME CALCULATION & SPREADSHEET NAVIGATION -->
+<script>
+const TP_DESCRIPTIONS = JSON.parse('{{ tp_descriptions_json|escapejs }}');
+
+function toggleTpAccordion() {
+  const panel = document.getElementById('panelAccordionTp');
+  const label = document.getElementById('labelAccordionTp');
+  if (panel.classList.contains('hidden')) {
+    panel.classList.remove('hidden');
+    label.innerText = 'Tutup Keterangan TP &uarr;';
+  } else {
+    panel.classList.add('hidden');
+    label.innerText = 'Lihat Rincian TP &darr;';
+  }
+}
+
+function calculateKokuRow(anggotaId) {
+  const scores = [];
+  let maxScore = -1;
+  let maxTp = null;
+
+  for (let i = 1; i <= 7; i++) {
+    const inp = document.getElementById('tp_' + anggotaId + '_' + i);
+    if (inp && inp.value.trim() !== '') {
+      const val = parseFloat(inp.value.trim().replace(',', '.'));
+      if (!isNaN(val)) {
+        scores.push(val);
+        if (val > maxScore) {
+          maxScore = val;
+          maxTp = i;
+        }
+      }
+    }
+  }
+
+  const naInp = document.getElementById('na_' + anggotaId);
+  const predInp = document.getElementById('pred_' + anggotaId);
+  const deskInp = document.getElementById('desk_' + anggotaId);
+
+  if (scores.length > 0) {
+    const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+    if (naInp) naInp.value = avg;
+
+    let pred = 'A';
+    if (avg >= 85) pred = 'A';
+    else if (avg >= 75) pred = 'B';
+    else if (avg >= 65) pred = 'C';
+    else pred = 'D';
+    if (predInp) predInp.value = pred;
+
+    // Rumuskan draf narasi jika deskripsi masih kosong
+    if (deskInp && (!deskInp.value || deskInp.dataset.autogen === 'true' || deskInp.value.trim() === '')) {
+      const descBest = TP_DESCRIPTIONS[maxTp] || ("aspek TP " + maxTp);
+      const cleanDesc = descBest.replace(/\.$/, '');
+      deskInp.value = `Murid sangat baik dan konsisten dalam ${cleanDesc.toLowerCase()}.`;
+      deskInp.dataset.autogen = 'true';
+    }
+  } else {
+    if (naInp) naInp.value = '';
+    if (predInp) predInp.value = 'A';
+  }
+}
+
+function handleKokuKey(event, anggotaId, tpNum) {
+  const rows = Array.from(document.querySelectorAll('#kokuTable tbody tr'));
+  const currentRow = document.getElementById('row_' + anggotaId);
+  const currentIndex = rows.indexOf(currentRow);
+
+  if (event.key === 'Enter' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    if (currentIndex < rows.length - 1) {
+      const nextRow = rows[currentIndex + 1];
+      const nextId = nextRow.dataset.anggotaId;
+      const target = document.getElementById('tp_' + nextId + '_' + tpNum);
+      if (target) target.focus();
+    }
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    if (currentIndex > 0) {
+      const prevRow = rows[currentIndex - 1];
+      const prevId = prevRow.dataset.anggotaId;
+      const target = document.getElementById('tp_' + prevId + '_' + tpNum);
+      if (target) target.focus();
+    }
+  } else if (event.key === 'ArrowRight' && tpNum < 7) {
+    const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum + 1));
+    if (target && target.selectionStart === target.value.length) {
+      event.preventDefault();
+      target.focus();
+    }
+  } else if (event.key === 'ArrowLeft' && tpNum > 1) {
+    const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum - 1));
+    if (target && target.selectionStart === 0) {
+      event.preventDefault();
+      target.focus();
+    }
+  }
+}
+</script>
+{% endblock %}

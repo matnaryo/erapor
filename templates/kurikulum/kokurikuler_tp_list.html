@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Input TP Kokurikuler - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Tujuan Pembelajaran Kokurikuler (Maks. 7 TP){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Card & Filter Bar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                    Dimensi P5 & Karakter Islami
+                </span>
+                <span class="text-xs text-slate-500">Fase {{ fase.kode|default:'A' }} &bull; Maksimal 7 TP per Semester</span>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">Rumusan Tujuan Pembelajaran Kokurikuler</h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+                Rumusan TP ini menjadi rujukan otomatis pada 7 kolom Matriks Kokurikuler dan narasi capaian rapor Halaman 3.
+            </p>
+        </div>
+
+        <form method="get" class="flex flex-wrap items-center gap-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tingkat Kelas</label>
+                <select name="tingkat" onchange="this.form.submit()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {% for t in tingkat_list %}
+                    <option value="{{ t }}" {% if selected_tingkat == t %}selected{% endif %}>Kelas {{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Semester</label>
+                <select name="sem" onchange="this.form.submit()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="1" {% if selected_sem == 1 %}selected{% endif %}>Semester 1 (Ganjil)</option>
+                    <option value="2" {% if selected_sem == 2 %}selected{% endif %}>Semester 2 (Genap)</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Form Input 7 TP Kokurikuler -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {% csrf_token %}
+
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">
+                    Daftar 7 Tujuan Pembelajaran &bull; Kelas {{ selected_tingkat }} (Semester {{ selected_sem }})
+                </h3>
+                <p class="text-xs text-slate-500">Sunting teks deskripsi capaian di bawah ini lalu klik simpan.</p>
+            </div>
+            <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Simpan Rumusan TP
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            {% for item in tp_items %}
+            <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col md:flex-row items-start md:items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-sm flex items-center justify-center shrink-0">
+                    TP {{ item.nomor }}
+                </div>
+
+                <div class="w-full md:w-36 shrink-0">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Label Kolom</label>
+                    <input type="text" name="tp_{{ item.nomor }}_kode" value="{{ item.kode }}"
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="w-full md:flex-1">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Deskripsi Narasi Tujuan Pembelajaran</label>
+                    <textarea name="tp_{{ item.nomor }}_deskripsi" rows="2" placeholder="Tuliskan rumusan capaian perilaku/adab murid..."
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">{{ item.deskripsi }}</textarea>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-bold shadow transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Simpan Perubahan TP Kokurikuler
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -19,8 +19,8 @@
                 </p>
             </div>
             <div>
-                <a href="{% url 'nilai_matrix' %}?kelas={{ anggota.kelas.id }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
-                    &larr; Kembali ke Matriks
+                <a href="{% url 'ekskul_prestasi_kelas' kelas_id=anggota.kelas.id %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
+                    &larr; Kembali ke Daftar Ekskul & Prestasi
                 </a>
             </div>
         </div>

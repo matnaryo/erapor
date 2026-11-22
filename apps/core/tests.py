@@ -102,9 +102,21 @@ class AuthAndDashboardTest(TestCase):
         self.assertIn('Matriks Nilai Rapor', html)
 
         # 2. Cek proteksi akses URL langsung
+        murid = Murid.objects.create(
+            nama_lengkap="Murid Uji",
+            nis="2601099",
+            nisn="0151239999",
+            jenis_kelamin="L",
+            tempat_lahir="Sleman",
+            tanggal_lahir=datetime.date(2019, 1, 1)
+        )
+        anggota = AnggotaKelas.objects.create(kelas=self.kelas, murid=murid, nomor_absen=1)
+
         self.assertEqual(self.client.get(reverse('kelas_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('murid_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('kokurikuler_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('ekskul_prestasi_kelas', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('ekskul_prestasi_input', kwargs={'anggota_id': anggota.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('rekap_absen_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('catatan_wali_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('class_print_list', kwargs={'kelas_id': self.kelas.id})).status_code, 302)

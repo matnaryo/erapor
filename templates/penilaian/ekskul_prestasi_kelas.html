@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Ekstrakurikuler & Prestasi Kelas {{ kelas.nama }} - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Pengelolaan Ekstrakurikuler & Prestasi Murid{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Card -->
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 sm:p-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        Halaman 4 & 5 Rapor Resmi
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                        Semester {{ sem_aktif.semester }} (T.A. {{ sem_aktif.tahun_ajaran.nama }})
+                    </span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+                    Ekstrakurikuler & Prestasi &bull; Kelas {{ kelas.nama }}
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                    Kelola data capaian 6 baris kegiatan ekstrakurikuler (Pramuka, Renang, Outbond) dan 6 baris catatan penghargaan/prestasi murid.
+                </p>
+            </div>
+
+            {% if user_role == 'SUPERADMIN' or user_role == 'KURIKULUM' %}
+            <div class="w-full md:w-auto">
+                <form method="get" class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">Pilih Kelas:</label>
+                    <select onchange="window.location.href='/penilaian/ekskul-prestasi/kelas/' + this.value + '/'" 
+                            class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        {% for k in kelas_list %}
+                        <option value="{{ k.id }}" {% if k.id == kelas.id %}selected{% endif %}>
+                            Kelas {{ k.nama }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Shortcut Links Wali Kelas -->
+        <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Tugas Wali Lainnya:</span>
+            <a href="{% url 'kokurikuler_input' kelas_id=kelas.id %}" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold border border-slate-200 transition">
+                🌱 Kokurikuler
+            </a>
+            <a href="{% url 'rekap_absen_input' kelas_id=kelas.id %}" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold border border-slate-200 transition">
+                📅 Rekap Kehadiran
+            </a>
+            <a href="{% url 'catatan_wali_input' kelas_id=kelas.id %}" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold border border-slate-200 transition">
+                📝 Catatan Wali
+            </a>
+            <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold border border-slate-200 transition">
+                📊 Matriks Nilai
+            </a>
+        </div>
+    </div>
+
+    <!-- Table Rombel Murid: Ekskul & Prestasi -->
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">Daftar Anggota Rombel ({{ row_data|length }} Murid)</h3>
+                <p class="text-xs text-slate-500">Klik tombol 'Kelola' pada baris murid untuk menginput atau memperbarui 6 slot ekskul & 6 slot prestasi.</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3.5 px-4 w-14 text-center">Absen</th>
+                        <th class="py-3.5 px-4 w-32">NISN</th>
+                        <th class="py-3.5 px-4">Nama Murid</th>
+                        <th class="py-3.5 px-4 text-center w-40">Ekskul (Hal. 4)</th>
+                        <th class="py-3.5 px-4 text-center w-40">Prestasi (Hal. 5)</th>
+                        <th class="py-3.5 px-4 text-right w-44">Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for r in row_data %}
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4 text-center font-bold text-slate-500 font-mono">
+                            {{ r.anggota.nomor_absen|default:forloop.counter }}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-slate-600">
+                            {{ r.anggota.murid.nisn }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900 text-sm">{{ r.anggota.murid.nama_lengkap }}</div>
+                            <div class="text-[11px] text-slate-400">NIS: {{ r.anggota.murid.nis|default:"-" }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if r.ekskul_count > 0 %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                {{ r.ekskul_count }} / 6 Kegiatan
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-400">
+                                0 / 6 (Kosong)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if r.prestasi_count > 0 %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <span>🏆</span> {{ r.prestasi_count }} / 6 Prestasi
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-400">
+                                0 / 6 (Kosong)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{% url 'ekskul_prestasi_input' anggota_id=r.anggota.id %}" 
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>Kelola Ekskul</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">
+                            Belum ada murid yang terdaftar di kelas ini.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

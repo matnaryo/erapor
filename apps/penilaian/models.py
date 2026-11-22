@@ -72,6 +72,8 @@ class KokurikulerNilai(models.Model):
     anggota_kelas = models.ForeignKey(AnggotaKelas, on_delete=models.CASCADE, related_name='nilai_kokurikuler')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='kokurikuler_list')
     aspek = models.CharField(max_length=150, default="Kokurikuler", verbose_name="Aspek / Dimensi Pembiasaan")
+    nilai_angka = models.FloatField(default=0, verbose_name="Rata-rata Nilai Kokurikuler")
+    tp_scores = models.JSONField(default=dict, blank=True, verbose_name="Nilai TP 1-7 (JSON)")
     predikat = models.CharField(max_length=2, choices=PREDIKAT_CHOICES, default='A', verbose_name="Predikat")
     deskripsi = models.TextField(verbose_name="Deskripsi Capaian Karakter & Pembiasaan Murid")
 

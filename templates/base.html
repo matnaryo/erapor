@@ -136,9 +136,9 @@
           </div>
         </div>
 
-        <!-- Grup: Penilaian Guru Mapel -->
+        <!-- Grup: Penilaian -->
         <div>
-          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Penilaian Guru Mapel</div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Penilaian</div>
           <div class="space-y-0.5">
             <a href="{% url 'nilai_matrix' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'nilai_matrix nilai_mupel_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">📊</span> <span>Matriks Nilai Rapor</span>
@@ -147,12 +147,28 @@
         </div>
 
         {% if user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
+        <!-- Grup: Kokurikuler -->
+        <div>
+          <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Kokurikuler</div>
+          <div class="space-y-0.5">
+            <a href="{% url 'kokurikuler_matrix' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'kokurikuler_matrix kokurikuler_matrix_kelas' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">📊</span> <span>Matriks Kokurikuler</span>
+            </a>
+            <a href="{% if current_kelas %}{% url 'kokurikuler_input' kelas_id=current_kelas.id %}{% else %}{% url 'kokurikuler_input_default' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'kokurikuler_input kokurikuler_input_default' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🌱</span> <span>Penilaian Kokurikuler</span>
+            </a>
+            <a href="{% url 'kokurikuler_tp_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kokurikuler_tp_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🎯</span> <span>Input TP Kokurikuler</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Grup: Tugas Khusus Wali Kelas -->
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tugas Khusus Wali Kelas</div>
           <div class="space-y-0.5">
-            <a href="{% if current_kelas %}{% url 'kokurikuler_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kokurikuler_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
-              <span class="text-sm">🌱</span> <span>Penilaian Kokurikuler</span>
+            <a href="{% if current_kelas %}{% url 'ekskul_matrix_kelas' kelas_id=current_kelas.id %}{% else %}{% url 'ekskul_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'ekskul_matrix ekskul_matrix_kelas' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🏃</span> <span>Ekstrakurikuler</span>
             </a>
             <a href="{% if current_kelas %}{% url 'rekap_absen_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'rekap_absen_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">📅</span> <span>Rekap Kehadiran (S/I/A)</span>

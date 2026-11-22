@@ -74,8 +74,9 @@ def rapor_print_view(request, anggota_id):
     # Catatan Wali Kelas (Halaman 4)
     catatan_obj = CatatanWaliKelas.objects.filter(anggota_kelas=anggota, semester=sem).first()
 
-    # Ekstrakurikuler (Halaman 4 - 6 Slot)
+    # Ekstrakurikuler (Halaman 4 - hanya ekskul yang terisi)
     ekskul_qs = EkstrakurikulerNilai.objects.filter(anggota_kelas=anggota, semester=sem).order_by('urutan')
+    ekskul_list = [e for e in ekskul_qs if e.kegiatan and e.kegiatan.strip()]
     ekskul_map = {e.urutan: e for e in ekskul_qs}
     ekskul_slots = []
     for i in range(1, 7):
@@ -111,6 +112,7 @@ def rapor_print_view(request, anggota_id):
         'koku_obj': koku_obj,
         'catatan_obj': catatan_obj,
         'ekskul_slots': ekskul_slots,
+        'ekskul_list': ekskul_list,
         'prestasi_slots': prestasi_slots,
         'absen_obj': absen_obj,
     }

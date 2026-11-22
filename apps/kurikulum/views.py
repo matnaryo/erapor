@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.core.decorators import role_required
-from apps.master_akademik.models import Fase
-from .models import MataPelajaran, KKTPRentang, TujuanPembelajaran, PembelajaranKelas
+from apps.master_akademik.models import Fase, Semester
+from .models import MataPelajaran, KKTPRentang, TujuanPembelajaran, PembelajaranKelas, TPKokurikuler
 
 @login_required(login_url='login')
 def mupel_list_view(request):
@@ -138,3 +138,57 @@ def tp_list_view(request):
         'tp_items': tp_items,
     }
     return render(request, 'kurikulum/tp_list.html', context)
+
+
+@login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
+def kokurikuler_tp_view(request):
+    """
+    Submenu Input TP Kokurikuler (Maksimal 7 TP):
+    Menentukan deskripsi rumusan TP Kokurikuler 1 s/d 7 per Tingkat Kelas & Semester.
+    """
+    sem_aktif = Semester.objects.filter(is_active=True).first()
+    selected_tingkat = int(request.GET.get('tingkat', 1))
+    selected_sem = int(request.GET.get('sem', sem_aktif.semester if sem_aktif else 1))
+
+    fase_kode = 'A' if selected_tingkat in [1, 2] else ('B' if selected_tingkat in [3, 4] else 'C')
+    fase = Fase.objects.filter(kode=fase_kode).first()
+
+    if request.method == 'POST':
+        for i in range(1, 8):
+            kode = request.POST.get(f"tp_{i}_kode", f"TP {i}").strip()
+            desk = request.POST.get(f"tp_{i}_deskripsi", "").strip()
+            if desk:
+                TPKokurikuler.objects.update_or_create(
+                    tingkat=selected_tingkat,
+                    semester=selected_sem,
+                    nomor=i,
+                    defaults={
+                        'fase': fase,
+                        'kode': kode or f"TP {i}",
+                        'deskripsi': desk,
+                        'urutan': i
+                    }
+                )
+        messages.success(request, f"Alhamdulillaah, Tujuan Pembelajaran Kokurikuler Kelas {selected_tingkat} Semester {selected_sem} berhasil disimpan.")
+        return redirect(f"{request.path}?tingkat={selected_tingkat}&sem={selected_sem}")
+
+    tp_items = []
+    tp_qs = {t.nomor: t for t in TPKokurikuler.objects.filter(tingkat=selected_tingkat, semester=selected_sem)}
+    for i in range(1, 8):
+        existing = tp_qs.get(i)
+        tp_items.append({
+            'nomor': i,
+            'kode': existing.kode if existing else f"TP {i}",
+            'deskripsi': existing.deskripsi if existing else "",
+        })
+
+    context = {
+        'selected_tingkat': selected_tingkat,
+        'selected_sem': selected_sem,
+        'fase': fase,
+        'tp_items': tp_items,
+        'tingkat_list': list(range(1, 7)),
+    }
+    return render(request, 'kurikulum/kokurikuler_tp_list.html', context)
+

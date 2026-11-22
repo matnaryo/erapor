@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from apps.core.decorators import role_required
 from apps.master_akademik.models import Kelas, AnggotaKelas, Semester, TahunAjaran
-from apps.kurikulum.models import PembelajaranKelas, MataPelajaran
+from apps.kurikulum.models import PembelajaranKelas, MataPelajaran, TPKokurikuler
 from .models import (
     NilaiAkhir, NilaiTP, KokurikulerNilai, EkstrakurikulerNilai, 
     PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
@@ -331,18 +331,40 @@ def api_generate_capaian_ai_view(request):
 
 @login_required(login_url='login')
 @role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
-def kokurikuler_input_view(request, kelas_id):
+def kokurikuler_input_view(request, kelas_id=None):
     """
-    Formulir input nilai Kokurikuler (aspek pembiasaan ibadah dan adab islami) per kelas.
+    Submenu Penilaian Kokurikuler:
+    Formulir input / review narasi & predikat capaian Kokurikuler per kelas.
     """
-    kelas = get_object_or_404(Kelas, id=kelas_id)
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
     sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+    else:
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
+
+    kelas = get_object_or_404(Kelas, id=target_kelas_id) if target_kelas_id else None
+    if not kelas:
+        messages.error(request, "Belum ada rombel kelas yang aktif.")
+        return redirect('dashboard')
+
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        if kelas.wali_kelas_id != pendidik.id and not user.is_superuser:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
+
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
 
     koku_dict = {
         k.anggota_kelas_id: k for k in KokurikulerNilai.objects.filter(
             semester=sem_aktif,
-            anggota_kelas__in=anggota_list
+            anggota_kelas__in=anggota_list,
+            aspek="Kokurikuler"
         )
     }
 
@@ -356,16 +378,19 @@ def kokurikuler_input_view(request, kelas_id):
         for anggota in anggota_list:
             pred = request.POST.get(f"koku_{anggota.id}_predikat", "A")
             desk = request.POST.get(f"koku_{anggota.id}_deskripsi", "").strip() or default_deskripsi
+            k_obj = koku_dict.get(anggota.id)
             KokurikulerNilai.objects.update_or_create(
                 anggota_kelas=anggota,
                 semester=sem_aktif,
                 aspek="Kokurikuler",
                 defaults={
                     'predikat': pred,
-                    'deskripsi': desk
+                    'deskripsi': desk,
+                    'nilai_angka': k_obj.nilai_angka if k_obj else 0,
+                    'tp_scores': k_obj.tp_scores if k_obj else {}
                 }
             )
-        messages.success(request, f"Nilai Kokurikuler kelas {kelas.nama} berhasil disimpan.")
+        messages.success(request, f"Alhamdulillaah, Penilaian Kokurikuler kelas {kelas.nama} berhasil disimpan.")
         return redirect('kokurikuler_input', kelas_id=kelas.id)
 
     row_data = []
@@ -375,10 +400,12 @@ def kokurikuler_input_view(request, kelas_id):
             'anggota': anggota,
             'predikat': koku.predikat if koku else 'A',
             'deskripsi': koku.deskripsi if koku else default_deskripsi,
+            'nilai_angka': koku.nilai_angka if koku and koku.nilai_angka > 0 else '',
         })
 
     context = {
         'kelas': kelas,
+        'kelas_list': kelas_list,
         'sem_aktif': sem_aktif,
         'row_data': row_data,
     }
@@ -386,6 +413,269 @@ def kokurikuler_input_view(request, kelas_id):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
+def kokurikuler_matrix_view(request, kelas_id=None):
+    """
+    Submenu Matriks Kokurikuler:
+    Tabel spreadsheet penilaian Kokurikuler 7 kolom TP per rombel kelas (maksimal 7 kolom TP).
+    Dilengkapi live auto-calculation rata-rata, predikat, dan perumusan narasi deskripsi capaian rapor.
+    """
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
+    sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+    else:
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
+
+    selected_kelas = get_object_or_404(Kelas, id=target_kelas_id) if target_kelas_id else None
+
+    if pendidik and pendidik.role == 'WALI_KELAS' and selected_kelas:
+        if selected_kelas.wali_kelas_id != pendidik.id and not user.is_superuser:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
+
+    row_data = []
+    tp_descriptions = {}
+    tp_range = list(range(1, 8))
+
+    if selected_kelas:
+        sem_num = sem_aktif.semester if sem_aktif else 1
+        tp_qs = TPKokurikuler.objects.filter(tingkat=selected_kelas.tingkat, semester=sem_num).order_by('urutan', 'nomor')
+        for tp in tp_qs:
+            tp_descriptions[tp.nomor] = tp.deskripsi
+
+        for i in range(1, 8):
+            if i not in tp_descriptions:
+                tp_descriptions[i] = f"Tujuan Pembelajaran Kokurikuler {i}"
+
+        anggota_list = AnggotaKelas.objects.filter(kelas=selected_kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
+        koku_dict = {
+            k.anggota_kelas_id: k for k in KokurikulerNilai.objects.filter(
+                anggota_kelas__in=anggota_list,
+                semester=sem_aktif,
+                aspek="Kokurikuler"
+            )
+        }
+
+        if request.method == 'POST':
+            for a in anggota_list:
+                tp_scores = {}
+                score_values = []
+                for i in range(1, 8):
+                    raw_val = request.POST.get(f"murid_{a.id}_tp_{i}", "").strip().replace(',', '.')
+                    if raw_val:
+                        try:
+                            val = float(raw_val)
+                            tp_scores[str(i)] = val
+                            score_values.append(val)
+                        except ValueError:
+                            pass
+
+                avg_val = round(sum(score_values) / len(score_values), 1) if score_values else 0.0
+
+                pred = request.POST.get(f"murid_{a.id}_predikat", "").strip()
+                if not pred:
+                    if avg_val >= 85:
+                        pred = 'A'
+                    elif avg_val >= 75:
+                        pred = 'B'
+                    elif avg_val >= 65:
+                        pred = 'C'
+                    else:
+                        pred = 'D' if score_values else 'A'
+
+                desk = request.POST.get(f"murid_{a.id}_deskripsi", "").strip()
+                if not desk and score_values:
+                    best_tp = max(tp_scores.items(), key=lambda x: x[1])[0]
+                    best_desc = tp_descriptions.get(int(best_tp), f"aspek ke-{best_tp}")
+                    desk = f"Murid sangat baik dan istiqomah dalam {best_desc.lower().rstrip('.')}."
+
+                KokurikulerNilai.objects.update_or_create(
+                    anggota_kelas=a,
+                    semester=sem_aktif,
+                    aspek="Kokurikuler",
+                    defaults={
+                        'nilai_angka': avg_val,
+                        'tp_scores': tp_scores,
+                        'predikat': pred,
+                        'deskripsi': desk
+                    }
+                )
+
+            messages.success(request, f"Alhamdulillaah, Matriks Nilai Kokurikuler kelas {selected_kelas.nama} berhasil disimpan.")
+            return redirect(f"{request.path}?kelas={selected_kelas.id}")
+
+        for a in anggota_list:
+            k = koku_dict.get(a.id)
+            scores = k.tp_scores if k and isinstance(k.tp_scores, dict) else {}
+            row_data.append({
+                'anggota': a,
+                'scores': {i: scores.get(str(i), '') for i in range(1, 8)},
+                'rata_rata': k.nilai_angka if k and k.nilai_angka > 0 else '',
+                'predikat': k.predikat if k else 'A',
+                'deskripsi': k.deskripsi if k else '',
+            })
+
+    context = {
+        'selected_kelas': selected_kelas,
+        'kelas_list': kelas_list,
+        'sem_aktif': sem_aktif,
+        'row_data': row_data,
+        'tp_range': tp_range,
+        'tp_descriptions': tp_descriptions,
+        'tp_descriptions_json': json.dumps(tp_descriptions),
+    }
+    return render(request, 'penilaian/kokurikuler_matrix.html', context)
+
+
+@login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
+def ekskul_matrix_view(request, kelas_id=None):
+    """
+    Submenu Tugas Khusus Wali Kelas:
+    Matriks Input Ekstrakurikuler per rombel kelas.
+    Tabel berkolom mirip Matriks Nilai Rapor:
+    Paling kiri: No & Nama Siswa.
+    Lalu 6 kelompok kolom Ekstrakurikuler 1 s/d 6 (Kegiatan, Predikat, Keterangan).
+    Wali kelas dapat menyunting langsung secara manual.
+    """
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
+    sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+    else:
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
+
+    selected_kelas = get_object_or_404(Kelas, id=target_kelas_id) if target_kelas_id else None
+
+    if pendidik and pendidik.role == 'WALI_KELAS' and selected_kelas:
+        if selected_kelas.wali_kelas_id != pendidik.id and not user.is_superuser:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
+
+    row_data = []
+    if selected_kelas:
+        anggota_list = AnggotaKelas.objects.filter(kelas=selected_kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
+        
+        ekskul_qs = EkstrakurikulerNilai.objects.filter(
+            anggota_kelas__in=anggota_list,
+            semester=sem_aktif
+        )
+        ekskul_dict = {(e.anggota_kelas_id, e.urutan): e for e in ekskul_qs}
+
+        if request.method == 'POST':
+            for a in anggota_list:
+                for i in range(1, 7):
+                    keg = request.POST.get(f"murid_{a.id}_ekskul_{i}_kegiatan", "").strip()
+                    pred = request.POST.get(f"murid_{a.id}_ekskul_{i}_predikat", "A").strip()
+                    ket = request.POST.get(f"murid_{a.id}_ekskul_{i}_keterangan", "").strip()
+
+                    if keg:
+                        EkstrakurikulerNilai.objects.update_or_create(
+                            anggota_kelas=a,
+                            semester=sem_aktif,
+                            urutan=i,
+                            defaults={
+                                'kegiatan': keg,
+                                'predikat': pred,
+                                'keterangan': ket
+                            }
+                        )
+                    else:
+                        EkstrakurikulerNilai.objects.filter(
+                            anggota_kelas=a,
+                            semester=sem_aktif,
+                            urutan=i
+                        ).delete()
+
+            messages.success(request, f"Alhamdulillaah, data penilaian Ekstrakurikuler kelas {selected_kelas.nama} berhasil disimpan.")
+            return redirect(f"{request.path}?kelas={selected_kelas.id}")
+
+        for a in anggota_list:
+            slots = []
+            for i in range(1, 7):
+                item = ekskul_dict.get((a.id, i))
+                slots.append({
+                    'urutan': i,
+                    'kegiatan': item.kegiatan if item else '',
+                    'predikat': item.predikat if item else 'A',
+                    'keterangan': item.keterangan if item else '',
+                })
+            row_data.append({
+                'anggota': a,
+                'slots': slots,
+            })
+
+    context = {
+        'selected_kelas': selected_kelas,
+        'kelas_list': kelas_list,
+        'sem_aktif': sem_aktif,
+        'row_data': row_data,
+        'slot_range': list(range(1, 7)),
+    }
+    return render(request, 'penilaian/ekskul_matrix.html', context)
+
+
+
+@login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
+def ekskul_prestasi_kelas_view(request, kelas_id):
+    """
+    Submenu Tugas Khusus Wali Kelas:
+    Pengelolaan Ekstrakurikuler (Hal 4) & Prestasi Murid (Hal 5) per Rombel Kelas.
+    """
+    kelas = get_object_or_404(Kelas, id=kelas_id)
+    sem_aktif = Semester.objects.filter(is_active=True).first()
+
+    user_role = getattr(request.user, 'role', 'GURU_MAPEL')
+    if user_role == 'WALI_KELAS' and hasattr(request.user, 'profil_pendidik'):
+        if kelas.wali_kelas_id != request.user.profil_pendidik.id:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
+
+    anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
+
+    from collections import defaultdict
+    ekskul_count = defaultdict(int)
+    for e in EkstrakurikulerNilai.objects.filter(anggota_kelas__in=anggota_list, semester=sem_aktif):
+        ekskul_count[e.anggota_kelas_id] += 1
+
+    prestasi_count = defaultdict(int)
+    for p in PrestasiMurid.objects.filter(anggota_kelas__in=anggota_list, semester=sem_aktif):
+        prestasi_count[p.anggota_kelas_id] += 1
+
+    row_data = []
+    for a in anggota_list:
+        row_data.append({
+            'anggota': a,
+            'ekskul_count': ekskul_count[a.id],
+            'prestasi_count': prestasi_count[a.id],
+        })
+
+    kelas_list = Kelas.objects.all().order_by('tingkat', 'nama')
+
+    context = {
+        'kelas': kelas,
+        'sem_aktif': sem_aktif,
+        'row_data': row_data,
+        'kelas_list': kelas_list,
+        'user_role': user_role,
+    }
+    return render(request, 'penilaian/ekskul_prestasi_kelas.html', context)
+
+
+@login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def ekskul_prestasi_input_view(request, anggota_id):
     """
     Formulir input Ekstrakurikuler (maks 6 baris) & Prestasi (maks 6 baris) per murid.
@@ -393,6 +683,12 @@ def ekskul_prestasi_input_view(request, anggota_id):
     """
     anggota = get_object_or_404(AnggotaKelas.objects.select_related('murid', 'kelas'), id=anggota_id)
     sem_aktif = Semester.objects.filter(is_active=True).first()
+
+    user_role = getattr(request.user, 'role', 'GURU_MAPEL')
+    if user_role == 'WALI_KELAS' and hasattr(request.user, 'profil_pendidik'):
+        if anggota.kelas.wali_kelas_id != request.user.profil_pendidik.id:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
 
     ekskul_list = EkstrakurikulerNilai.objects.filter(anggota_kelas=anggota, semester=sem_aktif).order_by('urutan')
     prestasi_list = PrestasiMurid.objects.filter(anggota_kelas=anggota, semester=sem_aktif).order_by('urutan')

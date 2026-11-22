@@ -21,13 +21,16 @@
 
         {% if selected_kelas and user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
         <div class="flex flex-wrap gap-2 text-xs">
-            <a href="{% url 'kokurikuler_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-bold border border-blue-200 transition-colors">
-                Input Kokurikuler
+            <a href="{% url 'kokurikuler_matrix_kelas' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-bold border border-blue-200 transition-colors">
+                Matriks Kokurikuler
+            </a>
+            <a href="{% url 'ekskul_matrix_kelas' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold border border-amber-200 transition-colors">
+                Matriks Ekskul
             </a>
             <a href="{% url 'rekap_absen_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg font-bold border border-purple-200 transition-colors">
                 Input Presensi
             </a>
-            <a href="{% url 'catatan_wali_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold border border-amber-200 transition-colors">
+            <a href="{% url 'catatan_wali_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold border border-emerald-200 transition-colors">
                 Catatan Wali Kelas
             </a>
         </div>
@@ -94,48 +97,6 @@
             </table>
         </div>
     </div>
-
-    {% if user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
-    <!-- Data Murid & Ekstrakurikuler / Prestasi Individual -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <h3 class="font-bold text-slate-800 text-base">Penilaian Ekskul & Prestasi Per Murid (Halaman 4 & 5)</h3>
-            <p class="text-xs text-slate-500">Kelola 6 baris ekstrakurikuler dan 6 baris prestasi spesifik untuk tiap murid.</p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
-                        <th class="py-3 px-4 w-12 text-center">Absen</th>
-                        <th class="py-3 px-4 w-28">NISN</th>
-                        <th class="py-3 px-4">Nama Murid</th>
-                        <th class="py-3 px-4 text-center">Ekskul Terisi</th>
-                        <th class="py-3 px-4 text-center">Prestasi Terisi</th>
-                        <th class="py-3 px-4 text-right w-44">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for a in anggota_list %}
-                    <tr class="hover:bg-slate-50/70 transition-colors">
-                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ a.nomor_absen|default:forloop.counter }}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-slate-600">{{ a.murid.nisn }}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">{{ a.murid.nama_lengkap }}</td>
-                        <td class="py-3 px-4 text-center font-mono text-xs text-slate-700">{{ a.nilai_ekskul_list.count }} / 6</td>
-                        <td class="py-3 px-4 text-center font-mono text-xs text-slate-700">{{ a.prestasi_list.count }} / 6</td>
-                        <td class="py-3 px-4 text-right">
-                            <a href="{% url 'ekskul_prestasi_input' anggota_id=a.id %}" class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors border border-blue-200">
-                                Ekskul & Prestasi
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada murid di kelas ini.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

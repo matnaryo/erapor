@@ -81,6 +81,36 @@ class TujuanPembelajaran(models.Model):
         return f"{self.mata_pelajaran.kode} Kls {self.tingkat} Sem {self.semester} - {self.kode}"
 
 
+class TPKokurikuler(models.Model):
+    """
+    Tujuan Pembelajaran (TP) Kokurikuler / P5 (Maksimal 7 TP per Fase/Tingkat/Semester).
+    Contoh:
+    1. Pembiasaan Sholat Dhuha & Sholat Berjamaah
+    2. Hafalan & Muraja'ah Tahfidz Al-Qur'an
+    3. Adab Makan Islami & Pola Hidup Sehat
+    4. Kepedulian Sosial & Gotong Royong
+    5. Kemandirian & Tanggung Jawab Belajar
+    6. Olahraga & Sportivitas Ceria
+    7. Akhlak Islami & Santun Berbicara
+    """
+    fase = models.ForeignKey(Fase, on_delete=models.CASCADE, related_name='tp_kokurikuler_list', null=True, blank=True)
+    tingkat = models.IntegerField(verbose_name="Tingkat Kelas (1-6)", default=1)
+    semester = models.IntegerField(choices=[(1, '1 (satu)'), (2, '2 (dua)')], default=1)
+    nomor = models.IntegerField(verbose_name="Nomor TP (1-7)", default=1)
+    kode = models.CharField(max_length=20, verbose_name="Kode TP (e.g. TP 1)", default="TP 1")
+    deskripsi = models.TextField(verbose_name="Deskripsi Tujuan Pembelajaran Kokurikuler")
+    urutan = models.IntegerField(default=1)
+
+    class Meta:
+        verbose_name = "Tujuan Pembelajaran Kokurikuler"
+        verbose_name_plural = "Tujuan Pembelajaran Kokurikuler"
+        ordering = ['tingkat', 'semester', 'urutan', 'nomor']
+        unique_together = ['tingkat', 'semester', 'nomor']
+
+    def __str__(self):
+        return f"TP Kokurikuler Kls {self.tingkat} Sem {self.semester} - {self.kode}: {self.deskripsi[:40]}"
+
+
 class PembelajaranKelas(models.Model):
     """
     Penugasan mengajar: Guru mengajar Mata Pelajaran tertentu di Kelas tertentu pada Semester aktif.
