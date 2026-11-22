@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.core.decorators import role_required
-from apps.master_akademik.models import Fase, Semester
+from apps.master_akademik.models import Fase, Semester, TahunAjaran
 from .models import MataPelajaran, KKTPRentang, TujuanPembelajaran, PembelajaranKelas, TPKokurikuler
 
 @login_required(login_url='login')
@@ -148,7 +148,15 @@ def kokurikuler_tp_view(request):
     Menentukan deskripsi rumusan TP Kokurikuler 1 s/d 7 per Tingkat Kelas & Semester.
     """
     sem_aktif = Semester.objects.filter(is_active=True).first()
-    selected_tingkat = int(request.GET.get('tingkat', 1))
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        selected_tingkat = kelas_asuhan.tingkat if kelas_asuhan else 1
+    else:
+        selected_tingkat = int(request.GET.get('tingkat', 1))
+
     selected_sem = int(request.GET.get('sem', sem_aktif.semester if sem_aktif else 1))
 
     fase_kode = 'A' if selected_tingkat in [1, 2] else ('B' if selected_tingkat in [3, 4] else 'C')

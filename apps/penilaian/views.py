@@ -30,8 +30,13 @@ def nilai_matrix_view(request):
     kelas_id = request.GET.get('kelas')
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama')
 
+    # Jika Wali Kelas, kunci kelas HANYA ke kelas asuhannya (wali kelas bertanggung jawab pada kelasnya masing-masing)
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        selected_kelas = kelas_asuhan
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
     # Jika Guru Mapel, filter hanya kelas yang diajar oleh guru tersebut
-    if pendidik and pendidik.role == 'GURU_MAPEL':
+    elif pendidik and pendidik.role == 'GURU_MAPEL':
         ampu_kelas_ids = PembelajaranKelas.objects.filter(
             guru_pengampu=pendidik,
             semester=sem_aktif
@@ -41,8 +46,9 @@ def nilai_matrix_view(request):
                 guru_pengampu=pendidik
             ).values_list('kelas_id', flat=True).distinct()
         kelas_list = kelas_list.filter(id__in=ampu_kelas_ids)
-    
-    selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
+        selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
+    else:
+        selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
 
     pembelajaran_list = []
     anggota_list = []
@@ -345,7 +351,8 @@ def kokurikuler_input_view(request, kelas_id=None):
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
     if pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
-        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+        target_kelas_id = kelas_asuhan.id if kelas_asuhan else None
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
     else:
         target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
 
@@ -429,7 +436,8 @@ def kokurikuler_matrix_view(request, kelas_id=None):
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
     if pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
-        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+        target_kelas_id = kelas_asuhan.id if kelas_asuhan else None
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
     else:
         target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
 
@@ -667,7 +675,8 @@ def ekskul_matrix_view(request, kelas_id=None):
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
     if pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
-        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+        target_kelas_id = kelas_asuhan.id if kelas_asuhan else None
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
     else:
         target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
 
@@ -760,7 +769,8 @@ def prestasi_matrix_view(request, kelas_id=None):
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
     if pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
-        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+        target_kelas_id = kelas_asuhan.id if kelas_asuhan else None
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
     else:
         target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
 
@@ -1014,12 +1024,47 @@ def rekap_absen_input_view(request, kelas_id):
 
 @login_required(login_url='login')
 @role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
-def catatan_wali_input_view(request, kelas_id):
+def catatan_wali_input_view(request, kelas_id=None):
     """
     Formulir input Catatan Naratif Wali Kelas (Halaman 4 cetak rapor).
     """
-    kelas = get_object_or_404(Kelas, id=kelas_id)
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
+    is_admin = user.is_superuser or (pendidik and pendidik.role in ['SUPERADMIN', 'KURIKULUM'])
+
     sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    if is_admin:
+        kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama') if ta_aktif else Kelas.objects.all().order_by('tingkat', 'nama')
+    elif pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_list = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama') if ta_aktif else pendidik.kelas_asuhan.all().order_by('tingkat', 'nama')
+    else:
+        kelas_list = Kelas.objects.none()
+
+    target_param = request.GET.get('kelas')
+    if target_param:
+        try:
+            target_id = int(target_param)
+            if target_id != kelas_id:
+                return redirect('catatan_wali_input', kelas_id=target_id)
+        except (ValueError, TypeError):
+            pass
+
+    if not kelas_id:
+        if kelas_list.exists():
+            return redirect('catatan_wali_input', kelas_id=kelas_list.first().id)
+        else:
+            messages.error(request, "Belum ada rombel kelas yang terdaftar.")
+            return redirect('dashboard')
+
+    kelas = get_object_or_404(Kelas, id=kelas_id)
+
+    if not is_admin and pendidik and pendidik.role == 'WALI_KELAS':
+        if kelas.wali_kelas_id != pendidik.id:
+            messages.error(request, "Anda hanya berwenang mengakses catatan kelas asuhan Anda.")
+            return redirect('dashboard')
+
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
 
     catatan_dict = {
@@ -1059,7 +1104,9 @@ def catatan_wali_input_view(request, kelas_id):
 
     context = {
         'kelas': kelas,
+        'kelas_list': kelas_list,
         'sem_aktif': sem_aktif,
         'row_data': row_data,
+        'is_admin': is_admin,
     }
     return render(request, 'penilaian/catatan_wali_input.html', context)

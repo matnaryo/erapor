@@ -72,6 +72,55 @@ class AuthAndDashboardTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Anda telah keluar')
 
+    def test_wali_kelas_has_no_rombel_dropdown_selectors(self):
+        # Buat kelas lain agar terbukti dropdown rombel tidak muncul bagi wali kelas
+        Kelas.objects.create(
+            tahun_ajaran=self.ta,
+            fase=self.fase_a,
+            tingkat=2,
+            nama='II Umar bin Khattab',
+            wali_kelas=None
+        )
+        self.client.login(username='irsyad_wali', password='bismillah123')
+
+        # 1. Matriks Nilai Rapor
+        res = self.client.get(reverse('nilai_matrix'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+        self.assertIn('Rombel Anda:', html)
+        self.assertIn('Kelas I', html)
+
+        # 2. Matriks Kokurikuler
+        res = self.client.get(reverse('kokurikuler_matrix'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+
+        # 3. Matriks Ekstrakurikuler
+        res = self.client.get(reverse('ekskul_matrix'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+
+        # 4. Matriks Prestasi Murid
+        res = self.client.get(reverse('prestasi_matrix'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+
+        # 5. Leger Nilai Excel
+        res = self.client.get(reverse('export_import_center'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+
+        # 6. Buku Induk Murid
+        res = self.client.get(reverse('murid_list'))
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertNotIn('<select name="kelas"', html)
+
     def test_guru_mapel_menu_and_access_restrictions(self):
         user_mapel = User.objects.create_user(
             username='guru_mapel',

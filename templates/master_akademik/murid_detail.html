@@ -56,7 +56,7 @@
         {% endfor %}
       </div>
 
-      {% if not riwayat_kelas and user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
+      {% if not riwayat_kelas and user_role == 'SUPERADMIN' or not riwayat_kelas and user_role == 'KURIKULUM' %}
       <div class="pt-3 border-t border-slate-100">
         <form method="POST" action="{% url 'murid_tempatkan_kelas' murid.id %}" class="flex flex-wrap items-center gap-2">
           {% csrf_token %}

@@ -24,5 +24,6 @@ urlpatterns = [
     path('ekskul-prestasi/kelas/<int:kelas_id>/', views.ekskul_prestasi_kelas_view, name='ekskul_prestasi_kelas'),
     path('ekskul-prestasi/<int:anggota_id>/', views.ekskul_prestasi_input_view, name='ekskul_prestasi_input'),
     path('absen/<int:kelas_id>/', views.rekap_absen_input_view, name='rekap_absen_input'),
+    path('catatan-wali/', views.catatan_wali_input_view, name='catatan_wali_input_default'),
     path('catatan-wali/<int:kelas_id>/', views.catatan_wali_input_view, name='catatan_wali_input'),
 ]

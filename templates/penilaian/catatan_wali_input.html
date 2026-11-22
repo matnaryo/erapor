@@ -18,7 +18,21 @@
                     Wali Kelas: <strong>{{ kelas.wali_kelas.nama_lengkap }}</strong> &bull; Semester {{ sem_aktif.semester }}
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                {% if kelas_list|length > 1 or is_admin or user_role == 'SUPERADMIN' %}
+                <form method="get" action="{% url 'catatan_wali_input_default' %}" class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                    <label for="selectRombelManual" class="text-xs font-bold text-slate-600 whitespace-nowrap flex items-center gap-1">
+                        <span>🏫</span> Rombel:
+                    </label>
+                    <select id="selectRombelManual" name="kelas" onchange="window.location.href='{% url 'catatan_wali_input_default' %}' + this.value + '/'" class="bg-white text-slate-800 text-xs font-bold rounded px-2.5 py-1 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                        {% for k in kelas_list %}
+                        <option value="{{ k.id }}" {% if kelas and kelas.id == k.id %}selected{% endif %}>
+                            Kelas {{ k.nama }} (Fase {{ k.fase.kode|default:'-' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
                 <a href="{% url 'ai_generate_notes_kelas' kelas_id=kelas.id %}" class="px-4 py-2 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span>Asisten AI Catatan ({{ ai_model_name|default:'qwen2.5:1.5b' }})</span>

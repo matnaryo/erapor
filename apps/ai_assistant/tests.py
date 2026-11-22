@@ -34,11 +34,19 @@ class AIAssistantTests(TestCase):
             is_active=True
         )
         self.fase_a = Fase.objects.create(kode="A", nama="Fase A (Kelas 1 - 2)")
+        self.fase_b = Fase.objects.create(kode="B", nama="Fase B (Kelas 3 - 4)")
         self.kelas_1 = Kelas.objects.create(
             tahun_ajaran=self.ta,
             fase=self.fase_a,
             tingkat=1,
             nama="1 Bilal bin Rabah",
+            wali_kelas=self.pendidik
+        )
+        self.kelas_2 = Kelas.objects.create(
+            tahun_ajaran=self.ta,
+            fase=self.fase_b,
+            tingkat=2,
+            nama="2C Abu Bakar Ash-Shiddiq",
             wali_kelas=self.pendidik
         )
         self.murid = Murid.objects.create(
@@ -50,9 +58,23 @@ class AIAssistantTests(TestCase):
             tanggal_lahir="2019-05-12",
             alamat_lengkap="Jl. Palagan KM 10"
         )
+        self.murid_2 = Murid.objects.create(
+            nama_lengkap="Hilwa Sahara",
+            nis="2602001",
+            nisn="0151234568",
+            jenis_kelamin="P",
+            tempat_lahir="Sleman",
+            tanggal_lahir="2018-03-20",
+            alamat_lengkap="Jl. Kaliurang KM 9"
+        )
         self.anggota = AnggotaKelas.objects.create(
             kelas=self.kelas_1,
             murid=self.murid,
+            nomor_absen=1
+        )
+        self.anggota_2 = AnggotaKelas.objects.create(
+            kelas=self.kelas_2,
+            murid=self.murid_2,
             nomor_absen=1
         )
         self.client.login(username='wali_ai_test', password='password123')
@@ -92,3 +114,27 @@ class AIAssistantTests(TestCase):
         catatan = CatatanWaliKelas.objects.filter(anggota_kelas=self.anggota).first()
         self.assertIsNotNone(catatan)
         self.assertIn("Alhamd", catatan.catatan)
+
+    def test_superadmin_sees_rombel_dropdown_and_can_switch_classes(self):
+        # Sebagai superadmin, pada kelas 1 terlihat dropdown berisi kelas 1 dan 2
+        response = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pilih Rombel:")
+        self.assertContains(response, "1 Bilal bin Rabah")
+        self.assertContains(response, "2C Abu Bakar Ash-Shiddiq")
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertNotContains(response, "Hilwa Sahara")
+
+        # Pindah ke kelas 2 via query param ?kelas=
+        switch_response = self.client.get(f"{reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id})}?kelas={self.kelas_2.id}")
+        self.assertRedirects(switch_response, reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_2.id}))
+
+        # Halaman kelas 2 memuat murid kelas 2
+        response_k2 = self.client.get(reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_2.id}))
+        self.assertEqual(response_k2.status_code, 200)
+        self.assertContains(response_k2, "Hilwa Sahara")
+        self.assertNotContains(response_k2, "Muhammad Arhan Al-Fatih")
+
+    def test_ai_generate_default_redirects_to_first_class(self):
+        response = self.client.get(reverse('ai_generate_notes_default'))
+        self.assertRedirects(response, reverse('ai_generate_notes_kelas', kwargs={'kelas_id': self.kelas_1.id}))

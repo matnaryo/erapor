@@ -24,6 +24,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
+      {% if user_role != 'WALI_KELAS' %}
       <form method="get" class="flex items-center gap-2">
         <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Rombel:</label>
         <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -34,6 +35,14 @@
           {% endfor %}
         </select>
       </form>
+      {% else %}
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rombel:</span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+          Kelas {{ selected_kelas.nama }} (Fase {{ selected_kelas.fase.kode }})
+        </span>
+      </div>
+      {% endif %}
 
       <a href="{% url 'kokurikuler_tp_list' %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-200">
         <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>

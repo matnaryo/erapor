@@ -27,15 +27,26 @@ def murid_list_view(request):
     if gender in ['L', 'P']:
         murid_qs = murid_qs.filter(jenis_kelamin=gender)
 
-    if kelas_id:
-        murid_qs = murid_qs.filter(riwayat_kelas__kelas_id=kelas_id)
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    # Wali Kelas hanya mengelola dan melihat murid di rombel binaannya
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        if kelas_asuhan:
+            murid_qs = murid_qs.filter(riwayat_kelas__kelas=kelas_asuhan)
+            kelas_list = Kelas.objects.filter(id=kelas_asuhan.id)
+        else:
+            murid_qs = murid_qs.none()
+            kelas_list = Kelas.objects.none()
+    else:
+        if kelas_id:
+            murid_qs = murid_qs.filter(riwayat_kelas__kelas_id=kelas_id)
+        kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
 
     paginator = Paginator(murid_qs, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
-    kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
 
     context = {
         'page_obj': page_obj,
@@ -164,6 +175,11 @@ def kelas_list_view(request):
     """Daftar rombongan belajar / kelas dan wali kelas."""
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
     kelas_qs = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase').order_by('tingkat', 'nama')
+    
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        kelas_qs = kelas_qs.filter(wali_kelas=pendidik)
+
     return render(request, 'master_akademik/kelas_list.html', {'kelas_list': kelas_qs, 'ta_aktif': ta_aktif})
 
 @login_required(login_url='login')

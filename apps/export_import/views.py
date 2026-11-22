@@ -20,7 +20,14 @@ def export_import_center_view(request):
     
     kelas_id = request.GET.get('kelas')
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama')
-    selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
+    
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        selected_kelas = kelas_asuhan
+        kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()
+    else:
+        selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
 
     pembelajaran_list = []
     if selected_kelas and sem_aktif:

@@ -29,6 +29,7 @@
         </div>
     </div>
 
+    {% if user_role != 'WALI_KELAS' %}
     <!-- Pilih Kelas -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
         <form method="get" class="flex flex-wrap items-center gap-3">
@@ -42,6 +43,7 @@
             </select>
         </form>
     </div>
+    {% endif %}
 
     <!-- Table of Subjects with Download Template & Import Form -->
     {% if selected_kelas %}

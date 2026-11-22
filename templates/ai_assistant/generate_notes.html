@@ -21,9 +21,25 @@
                     Model <strong>{{ model_name }}</strong> membaca langsung seluruh nilai akademik 11 mata pelajaran, menganalisis kekuatan belajar, mengidentifikasi aspek yang perlu penguatan, serta merumuskan ringkasan evaluasi dan rekomendasi saran tindak lanjut yang santun bernuansa islami.
                 </p>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{% url 'catatan_wali_input' kelas_id=kelas.id %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors border border-slate-700">
-                    &larr; Editor Manual
+            <div class="flex flex-wrap items-center gap-3">
+                {% if kelas_list|length > 1 or is_admin or user_role == 'SUPERADMIN' %}
+                <form method="get" action="{% url 'ai_generate_notes_default' %}" class="flex items-center gap-2 bg-slate-800/90 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-slate-700 shadow-inner">
+                    <label for="selectRombelAI" class="text-xs font-bold text-teal-300 whitespace-nowrap flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <span>Pilih Rombel:</span>
+                    </label>
+                    <select id="selectRombelAI" name="kelas" onchange="window.location.href='{% url 'ai_generate_notes_default' %}' + this.value + '/'" class="bg-slate-900 text-white text-xs font-bold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer">
+                        {% for k in kelas_list %}
+                        <option value="{{ k.id }}" {% if kelas and kelas.id == k.id %}selected{% endif %}>
+                            Kelas {{ k.nama }} (Fase {{ k.fase.kode|default:'-' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
+
+                <a href="{% url 'catatan_wali_input' kelas_id=kelas.id %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors border border-slate-700 flex items-center gap-1.5">
+                    <span>✏️</span> Editor Manual
                 </a>
             </div>
         </div>
@@ -32,14 +48,24 @@
     <!-- Actions & Stats Card -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-            <h3 class="font-bold text-slate-800 text-base">Kelola Narasi 1 Rombongan Belajar ({{ total_murid }} Murid)</h3>
+            <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-bold text-slate-800 text-base">Kelola Narasi Rombel Kelas {{ kelas.nama }} ({{ total_murid }} Murid)</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                    Fase {{ kelas.fase.kode|default:'-' }}
+                </span>
+                {% if kelas.wali_kelas %}
+                <span class="text-xs text-slate-500">
+                    &bull; Wali Kelas: <strong>{{ kelas.wali_kelas.nama_lengkap }}</strong>
+                </span>
+                {% endif %}
+            </div>
             <p class="text-xs text-slate-500">
                 Wali kelas dapat men-generate narasi per murid secara individual atau sekaligus satu rombel belajar.
             </p>
         </div>
         <form method="post" class="flex items-center gap-2">
             {% csrf_token %}
-            <button type="submit" name="action" value="generate_all" onclick="return confirm('Jalankan model {{ model_name }} untuk membaca nilai dan membuat catatan seluruh murid di kelas ini?')" class="px-4 py-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
+            <button type="submit" name="action" value="generate_all" onclick="return confirm('Jalankan model {{ model_name }} untuk membaca nilai dan membuat catatan seluruh murid di kelas {{ kelas.nama }}?')" class="px-4 py-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
                 <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Generate Seluruh Kelas ({{ model_name }})
             </button>

@@ -23,6 +23,7 @@
       </p>
     </div>
 
+    {% if user_role != 'WALI_KELAS' %}
     <form method="get" class="flex flex-wrap items-center gap-3">
       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Rombel:</label>
       <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -33,6 +34,14 @@
         {% endfor %}
       </select>
     </form>
+    {% else %}
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rombel Anda:</span>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
+        Kelas {{ selected_kelas.nama }} (Fase {{ selected_kelas.fase.kode }})
+      </span>
+    </div>
+    {% endif %}
   </div>
 
   {% if selected_kelas %}
