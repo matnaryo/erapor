@@ -277,3 +277,66 @@ def ensure_pembelajaran_kelas(kelas, semester, guru_pengampu):
         if created:
             created_count += 1
     return created_count
+
+
+def get_koku_predikat_and_ket(score):
+    """
+    Konversi Nilai Skala 4 Kokurikuler ke Predikat dan Keterangan:
+    3.20 - 4.00  : A (sangat baik)
+    2.80 - 3.19  : B (baik)
+    2.40 - 2.79  : C (cukup baik)
+    0.00 - 2.39  : D (perlu bimbingan)
+    """
+    if score is None:
+        return 'A', 'sangat baik'
+    try:
+        val = float(score)
+    except (ValueError, TypeError):
+        return 'A', 'sangat baik'
+    
+    # Jika input dalam skala 100 (> 4.0), konversikan otomatis ke skala 4
+    if val > 4.0:
+        val = min(4.0, round(val / 25.0, 2))
+    else:
+        val = round(val, 2)
+        
+    if val >= 3.20:
+        return 'A', 'sangat baik'
+    elif val >= 2.80:
+        return 'B', 'baik'
+    elif val >= 2.40:
+        return 'C', 'cukup baik'
+    else:
+        return 'D', 'perlu bimbingan'
+
+
+def generate_kokurikuler_combined_deskripsi(tp_data_list):
+    """
+    Menghasilkan gabungan deskripsi dari ke-7 TP kokurikuler:
+    tp_data_list: list of dict {'nomor': i, 'avg': float, 'predikat': 'A', 'ket': 'sangat baik', 'deskripsi': '...'}
+    Sesuai format narasi capaian Kokurikuler di view rapor Halaman 3 e-Rapor eLHaEs.
+    """
+    phrases = []
+    for item in tp_data_list:
+        ket = item.get('ket', 'sangat baik')
+        raw_desk = (item.get('deskripsi') or '').strip()
+        if not raw_desk:
+            continue
+        # Rapikan deskripsi: jika diawali 'Murid ...', bersihkan
+        if raw_desk.lower().startswith('murid '):
+            raw_desk = raw_desk[6:].strip()
+        # Huruf pertama lowercase dan hapus tanda titik di akhir
+        clean_desk = raw_desk[0].lower() + raw_desk[1:] if len(raw_desk) > 1 else raw_desk.lower()
+        clean_desk = clean_desk.rstrip('.')
+        
+        phrases.append(f"{ket} dalam {clean_desk}")
+        
+    if not phrases:
+        return "Murid sangat baik dalam membiasakan ibadah dan adab islami di sekolah."
+        
+    if len(phrases) == 1:
+        return f"Murid {phrases[0]}."
+    
+    # Gabungkan dengan koma, dan frasa terakhir diawali 'serta'
+    gabungan = ", ".join(phrases[:-1]) + ", serta " + phrases[-1] + "."
+    return f"Murid {gabungan}"

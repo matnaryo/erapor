@@ -13,7 +13,8 @@ from .models import (
 )
 from .services import (
     get_kktp_and_predikat, generate_capaian_kompetensi, ensure_pembelajaran_kelas,
-    get_tp_descriptions, calculate_from_tp_scores
+    get_tp_descriptions, calculate_from_tp_scores,
+    get_koku_predikat_and_ket, generate_kokurikuler_combined_deskripsi
 )
 from apps.ai_assistant.ollama_client import generate_capaian_kompetensi_ai
 
@@ -465,45 +466,87 @@ def kokurikuler_matrix_view(request, kelas_id=None):
         if request.method == 'POST':
             for a in anggota_list:
                 tp_scores = {}
-                score_values = []
+                tp_data_for_desc = []
+                all_averages = []
+
                 for i in range(1, 8):
-                    raw_val = request.POST.get(f"murid_{a.id}_tp_{i}", "").strip().replace(',', '.')
-                    if raw_val:
+                    raw_obs = request.POST.get(f"murid_{a.id}_tp_{i}_obs", "").strip().replace(',', '.')
+                    raw_juri = request.POST.get(f"murid_{a.id}_tp_{i}_juri", "").strip().replace(',', '.')
+                    raw_legacy = request.POST.get(f"murid_{a.id}_tp_{i}", "").strip().replace(',', '.')
+
+                    if not raw_obs and not raw_juri and raw_legacy:
+                        raw_obs = raw_legacy
+                        raw_juri = raw_legacy
+
+                    obs_val = None
+                    juri_val = None
+                    if raw_obs != "":
                         try:
-                            val = float(raw_val)
-                            tp_scores[str(i)] = val
-                            score_values.append(val)
+                            o = float(raw_obs)
+                            obs_val = min(4.0, round(o / 25.0, 2)) if o > 4.0 else round(o, 2)
+                        except ValueError:
+                            pass
+                    if raw_juri != "":
+                        try:
+                            j = float(raw_juri)
+                            juri_val = min(4.0, round(j / 25.0, 2)) if j > 4.0 else round(j, 2)
                         except ValueError:
                             pass
 
-                avg_val = round(sum(score_values) / len(score_values), 1) if score_values else 0.0
-
-                pred = request.POST.get(f"murid_{a.id}_predikat", "").strip()
-                if not pred:
-                    if avg_val >= 85:
-                        pred = 'A'
-                    elif avg_val >= 75:
-                        pred = 'B'
-                    elif avg_val >= 65:
-                        pred = 'C'
+                    if obs_val is not None and juri_val is not None:
+                        avg_i = round((obs_val + juri_val) / 2.0, 2)
+                    elif obs_val is not None:
+                        avg_i = obs_val
+                    elif juri_val is not None:
+                        avg_i = juri_val
                     else:
-                        pred = 'D' if score_values else 'A'
+                        avg_i = None
 
-                desk = request.POST.get(f"murid_{a.id}_deskripsi", "").strip()
-                if not desk and score_values:
-                    best_tp = max(tp_scores.items(), key=lambda x: x[1])[0]
-                    best_desc = tp_descriptions.get(int(best_tp), f"aspek ke-{best_tp}")
-                    desk = f"Murid sangat baik dan istiqomah dalam {best_desc.lower().rstrip('.')}."
+                    if avg_i is not None:
+                        pred_i, ket_i = get_koku_predikat_and_ket(avg_i)
+                        tp_scores[str(i)] = avg_i
+                        tp_scores[f"{i}_obs"] = obs_val
+                        tp_scores[f"{i}_juri"] = juri_val
+                        tp_scores[f"{i}_detail"] = {
+                            'obs': obs_val,
+                            'juri': juri_val,
+                            'avg': avg_i,
+                            'predikat': pred_i,
+                            'ket': ket_i
+                        }
+                        tp_data_for_desc.append({
+                            'nomor': i,
+                            'avg': avg_i,
+                            'predikat': pred_i,
+                            'ket': ket_i,
+                            'deskripsi': tp_descriptions.get(i, f"aspek ke-{i}")
+                        })
+                        all_averages.append(avg_i)
+
+                overall_avg = round(sum(all_averages) / len(all_averages), 2) if all_averages else 0.0
+                overall_pred, overall_ket = get_koku_predikat_and_ket(overall_avg)
+
+                user_pred = request.POST.get(f"murid_{a.id}_predikat", "").strip()
+                if user_pred:
+                    overall_pred = user_pred
+
+                user_desk = request.POST.get(f"murid_{a.id}_deskripsi", "").strip()
+                if user_desk:
+                    final_desk = user_desk
+                elif tp_data_for_desc:
+                    final_desk = generate_kokurikuler_combined_deskripsi(tp_data_for_desc)
+                else:
+                    final_desk = "Murid sangat baik dalam membiasakan ibadah dan adab islami di sekolah."
 
                 KokurikulerNilai.objects.update_or_create(
                     anggota_kelas=a,
                     semester=sem_aktif,
                     aspek="Kokurikuler",
                     defaults={
-                        'nilai_angka': avg_val,
+                        'nilai_angka': overall_avg,
                         'tp_scores': tp_scores,
-                        'predikat': pred,
-                        'deskripsi': desk
+                        'predikat': overall_pred,
+                        'deskripsi': final_desk
                     }
                 )
 
@@ -513,12 +556,84 @@ def kokurikuler_matrix_view(request, kelas_id=None):
         for a in anggota_list:
             k = koku_dict.get(a.id)
             scores = k.tp_scores if k and isinstance(k.tp_scores, dict) else {}
+
+            tp_row_data = []
+            tp_data_for_desc = []
+            for i in range(1, 8):
+                detail = scores.get(f"{i}_detail") or (scores.get(str(i)) if isinstance(scores.get(str(i)), dict) else {})
+                obs_raw = scores.get(f"{i}_obs", detail.get('obs', ''))
+                juri_raw = scores.get(f"{i}_juri", detail.get('juri', ''))
+
+                if obs_raw == '' and juri_raw == '':
+                    legacy_val = scores.get(str(i))
+                    if legacy_val is not None and not isinstance(legacy_val, dict):
+                        try:
+                            val_flt = float(legacy_val)
+                            if val_flt > 4.0:
+                                val_flt = round(val_flt / 25.0, 2)
+                            obs_raw = val_flt
+                            juri_raw = val_flt
+                        except (ValueError, TypeError):
+                            pass
+
+                try:
+                    o = float(obs_raw) if obs_raw != '' and obs_raw is not None else None
+                except (ValueError, TypeError):
+                    o = None
+                try:
+                    j = float(juri_raw) if juri_raw != '' and juri_raw is not None else None
+                except (ValueError, TypeError):
+                    j = None
+
+                if o is not None and j is not None:
+                    avg_tp = round((o + j) / 2.0, 2)
+                elif o is not None:
+                    avg_tp = o
+                elif j is not None:
+                    avg_tp = j
+                else:
+                    avg_tp = None
+
+                pred_tp, ket_tp = get_koku_predikat_and_ket(avg_tp) if avg_tp is not None else ('', '')
+
+                tp_row_data.append({
+                    'nomor': i,
+                    'obs': f"{o:.2f}".rstrip('0').rstrip('.') if o is not None else '',
+                    'juri': f"{j:.2f}".rstrip('0').rstrip('.') if j is not None else '',
+                    'avg': f"{avg_tp:.2f}".rstrip('0').rstrip('.') if avg_tp is not None else '',
+                    'predikat': pred_tp,
+                    'ket': ket_tp,
+                })
+                if avg_tp is not None:
+                    tp_data_for_desc.append({
+                        'nomor': i,
+                        'avg': avg_tp,
+                        'predikat': pred_tp,
+                        'ket': ket_tp,
+                        'deskripsi': tp_descriptions.get(i, f"aspek ke-{i}")
+                    })
+
+            if k and k.deskripsi:
+                desk_val = k.deskripsi
+            elif tp_data_for_desc:
+                desk_val = generate_kokurikuler_combined_deskripsi(tp_data_for_desc)
+            else:
+                desk_val = ""
+
+            rata_val = ""
+            if k and k.nilai_angka > 0:
+                val_k = k.nilai_angka
+                if val_k > 4.0:
+                    val_k = round(val_k / 25.0, 2)
+                rata_val = f"{val_k:.2f}".rstrip('0').rstrip('.')
+
             row_data.append({
                 'anggota': a,
+                'tp_row_data': tp_row_data,
                 'scores': {i: scores.get(str(i), '') for i in range(1, 8)},
-                'rata_rata': k.nilai_angka if k and k.nilai_angka > 0 else '',
+                'rata_rata': rata_val,
                 'predikat': k.predikat if k else 'A',
-                'deskripsi': k.deskripsi if k else '',
+                'deskripsi': desk_val,
             })
 
     context = {
@@ -624,6 +739,96 @@ def ekskul_matrix_view(request, kelas_id=None):
         'slot_range': list(range(1, 7)),
     }
     return render(request, 'penilaian/ekskul_matrix.html', context)
+
+
+@login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
+def prestasi_matrix_view(request, kelas_id=None):
+    """
+    Submenu Tugas Khusus Wali Kelas:
+    Matriks Input Prestasi & Penghargaan Murid per rombel kelas (Halaman 5 Rapor).
+    Tabel spreadsheet interaktif:
+    Paling kiri: No & Nama Siswa.
+    Lalu 6 kelompok kolom Prestasi 1 s/d 6 (Jenis Prestasi, Keterangan).
+    Wali kelas dapat menyunting langsung secara manual.
+    """
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
+    sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_asuhan.id if kelas_asuhan else None)
+    else:
+        target_kelas_id = kelas_id or request.GET.get('kelas') or (kelas_list.first().id if kelas_list.exists() else None)
+
+    selected_kelas = get_object_or_404(Kelas, id=target_kelas_id) if target_kelas_id else None
+
+    if pendidik and pendidik.role == 'WALI_KELAS' and selected_kelas:
+        if selected_kelas.wali_kelas_id != pendidik.id and not user.is_superuser:
+            messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
+            return redirect('dashboard')
+
+    row_data = []
+    if selected_kelas:
+        anggota_list = AnggotaKelas.objects.filter(kelas=selected_kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
+        
+        prestasi_qs = PrestasiMurid.objects.filter(
+            anggota_kelas__in=anggota_list,
+            semester=sem_aktif
+        )
+        prestasi_dict = {(p.anggota_kelas_id, p.urutan): p for p in prestasi_qs}
+
+        if request.method == 'POST':
+            for a in anggota_list:
+                for i in range(1, 7):
+                    jenis = request.POST.get(f"murid_{a.id}_prestasi_{i}_jenis", "").strip()
+                    ket = request.POST.get(f"murid_{a.id}_prestasi_{i}_keterangan", "").strip()
+
+                    if jenis:
+                        PrestasiMurid.objects.update_or_create(
+                            anggota_kelas=a,
+                            semester=sem_aktif,
+                            urutan=i,
+                            defaults={
+                                'jenis_prestasi': jenis,
+                                'keterangan': ket
+                            }
+                        )
+                    else:
+                        PrestasiMurid.objects.filter(
+                            anggota_kelas=a,
+                            semester=sem_aktif,
+                            urutan=i
+                        ).delete()
+
+            messages.success(request, f"Data Prestasi Murid Kelas {selected_kelas.nama} berhasil disimpan.")
+            return redirect('prestasi_matrix_kelas', kelas_id=selected_kelas.id)
+
+        for a in anggota_list:
+            slots = []
+            for i in range(1, 7):
+                item = prestasi_dict.get((a.id, i))
+                slots.append({
+                    'urutan': i,
+                    'jenis': item.jenis_prestasi if item else '',
+                    'keterangan': item.keterangan if item else '',
+                })
+            row_data.append({
+                'anggota': a,
+                'slots': slots,
+            })
+
+    context = {
+        'selected_kelas': selected_kelas,
+        'kelas_list': kelas_list,
+        'sem_aktif': sem_aktif,
+        'row_data': row_data,
+        'slot_range': list(range(1, 7)),
+    }
+    return render(request, 'penilaian/prestasi_matrix.html', context)
 
 
 

@@ -16,6 +16,10 @@ urlpatterns = [
     path('ekskul-matriks/', views.ekskul_matrix_view, name='ekskul_matrix'),
     path('ekskul-matriks/<int:kelas_id>/', views.ekskul_matrix_view, name='ekskul_matrix_kelas'),
 
+    # Prestasi Murid (Matriks 6 Kelompok Kolom)
+    path('prestasi-matriks/', views.prestasi_matrix_view, name='prestasi_matrix'),
+    path('prestasi-matriks/<int:kelas_id>/', views.prestasi_matrix_view, name='prestasi_matrix_kelas'),
+
     # Individual / Detail Input
     path('ekskul-prestasi/kelas/<int:kelas_id>/', views.ekskul_prestasi_kelas_view, name='ekskul_prestasi_kelas'),
     path('ekskul-prestasi/<int:anggota_id>/', views.ekskul_prestasi_input_view, name='ekskul_prestasi_input'),

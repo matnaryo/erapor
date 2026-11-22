@@ -13,13 +13,13 @@
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
           Dimensi P5 & Pembiasaan Islami
         </span>
-        <span class="text-xs text-slate-500">Maksimal 7 Kolom Tujuan Pembelajaran (TP)</span>
+        <span class="text-xs text-slate-500">Maksimal 7 Kolom TP &bull; 2 Sub-Kolom (Observasi & Juri) Skala 4</span>
       </div>
       <h2 class="text-xl font-black tracking-tight text-slate-900">
         Matriks Kokurikuler &bull; Kelas {{ selected_kelas.nama|default:'-' }}
       </h2>
       <p class="text-xs text-slate-500 mt-0.5">
-        Isikan nilai per TP (1 s/d 7). Rata-rata nilai dan draf narasi capaian akan dihitung otomatis secara instan.
+        Isikan nilai penilaian <strong>Observasi</strong> dan <strong>Juri</strong> (Skala 1 - 4). Rata-rata 2 kolom dan draf narasi gabungan ke-7 TP dirumuskan secara instan.
       </p>
     </div>
 
@@ -43,6 +43,31 @@
   </div>
 
   {% if selected_kelas %}
+  <!-- Legend Banner: Skala 4 & Konversi Predikat -->
+  <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2">
+      <span class="text-lg">⚖️</span>
+      <div>
+        <div class="font-bold text-slate-200">Aturan Konversi Nilai Kokurikuler (Skala 4):</div>
+        <div class="text-[11px] text-slate-400">Rata-rata 2 kolom (Observasi & Juri) menjadi dasar penentuan predikat dan narasi deskripsi rapor.</div>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+      <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+        <strong>3.20 - 4.00</strong> : A (Sangat Baik)
+      </span>
+      <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30">
+        <strong>2.80 - 3.19</strong> : B (Baik)
+      </span>
+      <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/30">
+        <strong>2.40 - 2.79</strong> : C (Cukup Baik)
+      </span>
+      <span class="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-400/30">
+        <strong>0.00 - 2.39</strong> : D (Perlu Bimbingan)
+      </span>
+    </div>
+  </div>
+
   <!-- Accordion Keterangan 7 TP -->
   <div class="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 text-xs">
     <div class="flex items-center justify-between cursor-pointer" onclick="toggleTpAccordion()">
@@ -72,46 +97,64 @@
       <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-          <span class="text-xs font-bold text-slate-700">Tabel Penilaian 7 TP Kokurikuler ({{ row_data|length }} Siswa)</span>
-          <span class="text-[11px] text-slate-500">&mdash; Nilai TP skala 0-100. Enter/Panah Bawah untuk baris berikutnya.</span>
+          <span class="text-xs font-bold text-slate-700">Tabel Penilaian Kokurikuler ({{ row_data|length }} Siswa &bull; 7 TP &bull; 14 Kolom Penilaian)</span>
         </div>
-        <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Simpan Matriks Kokurikuler
-        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="recalculateAllKokuRows()" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Hitung & Susun Ulang Narasi</span>
+          </button>
+          <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Simpan Matriks Kokurikuler</span>
+          </button>
+        </div>
       </div>
 
       <!-- Matrix Table -->
       <div class="overflow-x-auto relative max-h-[750px]">
         <table id="kokuTable" class="w-full text-left border-collapse text-xs">
-          <!-- Sticky Header -->
+          <!-- Sticky Header (2 Baris Header) -->
           <thead class="sticky top-0 z-30 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[11px]">
+            <!-- Baris Header 1: Grup TP (Colspan 2) & Output -->
             <tr>
-              <th scope="col" class="py-3 px-3 w-10 text-center sticky left-0 z-40 bg-slate-100 border-r border-slate-200">
+              <th scope="col" rowspan="2" class="py-3 px-3 w-10 text-center sticky left-0 z-40 bg-slate-100 border-r border-slate-200">
                 No
               </th>
-              <th scope="col" class="py-3 px-4 min-w-[190px] w-52 sticky left-10 z-40 bg-slate-100 border-r-2 border-slate-300 shadow-xs">
+              <th scope="col" rowspan="2" class="py-3 px-4 min-w-[190px] w-52 sticky left-10 z-40 bg-slate-100 border-r-2 border-slate-300 shadow-xs">
                 Nama Murid
               </th>
 
-              <!-- 7 TP Columns -->
+              <!-- 7 TP Header Groups (Masing-masing Colspan 2) -->
               {% for i in tp_range %}
-              <th scope="col" class="py-3 px-1 text-center w-14 min-w-[58px] border-r border-slate-200 hover:bg-blue-50 transition cursor-help"
+              <th scope="col" colspan="2" class="py-2 px-1 text-center border-r-2 border-slate-300 hover:bg-blue-50 transition cursor-help"
                   title="TP {{ i }}: {% for k, v in tp_descriptions.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}">
-                <span class="block">TP{{ i }}</span>
+                <span class="block text-slate-800">TP {{ i }}</span>
               </th>
               {% endfor %}
 
-              <!-- Output: Rata-rata, Predikat, Deskripsi Narasi Rapor -->
-              <th scope="col" class="py-3 px-2 text-center w-20 bg-slate-200/80 border-r border-slate-300">
-                Rata-rata
+              <!-- Output: Rata-rata Skala 4, Predikat, Deskripsi Narasi Rapor -->
+              <th scope="col" rowspan="2" class="py-3 px-2 text-center w-24 bg-slate-200/90 text-slate-800 border-r border-slate-300">
+                Rata-rata<br><span class="text-[9px] font-normal lowercase">(Skala 4)</span>
               </th>
-              <th scope="col" class="py-3 px-2 text-center w-14 bg-slate-200/80 border-r border-slate-300">
+              <th scope="col" rowspan="2" class="py-3 px-2 text-center w-16 bg-slate-200/90 text-slate-800 border-r border-slate-300">
                 Pred
               </th>
-              <th scope="col" class="py-3 px-3 min-w-[320px] bg-blue-50/80 text-blue-950 border-r border-slate-300">
-                Deskripsi Narasi Capaian Rapor (Halaman 3)
+              <th scope="col" rowspan="2" class="py-3 px-3 min-w-[360px] bg-blue-50/90 text-blue-950 border-r border-slate-300">
+                Deskripsi Gabungan Ke-7 TP (Rapor Halaman 3)
               </th>
+            </tr>
+
+            <!-- Baris Header 2: Sub-Kolom Observasi & Juri -->
+            <tr class="text-[10px] bg-slate-200/60">
+              {% for i in tp_range %}
+              <th scope="col" class="py-1 px-1 text-center w-14 bg-blue-50/80 text-blue-900 border-r border-slate-200" title="Observasi TP {{ i }}">
+                Obs
+              </th>
+              <th scope="col" class="py-1 px-1 text-center w-14 bg-emerald-50/80 text-emerald-900 border-r-2 border-slate-300" title="Juri TP {{ i }}">
+                Juri
+              </th>
+              {% endfor %}
             </tr>
           </thead>
 
@@ -126,28 +169,46 @@
                 {{ r.anggota.murid.nama_lengkap }}
               </td>
 
-              <!-- 7 Input Kolom TP (1 s/d 7) -->
-              {% for i in tp_range %}
-              <td class="p-1 border-r border-slate-200 text-center">
+              <!-- 7 TP Columns x 2 Sub-Kolom (Obs & Juri) -->
+              {% for item in r.tp_row_data %}
+              <!-- Sub-Kolom Observasi -->
+              <td class="p-1 border-r border-slate-200 text-center bg-blue-50/20">
                 <input type="text"
-                       name="murid_{{ r.anggota.id }}_tp_{{ i }}"
-                       id="tp_{{ r.anggota.id }}_{{ i }}"
+                       name="murid_{{ r.anggota.id }}_tp_{{ item.nomor }}_obs"
+                       id="tp_{{ r.anggota.id }}_{{ item.nomor }}_obs"
                        data-anggota="{{ r.anggota.id }}"
-                       data-tp="{{ i }}"
-                       value="{% for k, v in r.scores.items %}{% if k == i %}{{ v }}{% endif %}{% endfor %}"
-                       class="tp-cell w-full px-1 py-1.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-blue-500 rounded-md text-xs font-mono font-bold text-center text-slate-800 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                       data-tp="{{ item.nomor }}"
+                       data-sub="obs"
+                       value="{{ item.obs }}"
+                       placeholder="1-4"
+                       class="tp-koku-cell w-full px-1 py-1.5 bg-white border border-slate-200 focus:border-blue-500 rounded text-xs font-mono font-bold text-center text-slate-800 focus:ring-1 focus:ring-blue-500 outline-none transition"
                        oninput="calculateKokuRow('{{ r.anggota.id }}')"
-                       onkeydown="handleKokuKey(event, '{{ r.anggota.id }}', {{ i }})">
+                       onkeydown="handleKokuKey(event, '{{ r.anggota.id }}', {{ item.nomor }}, 'obs')">
+              </td>
+              <!-- Sub-Kolom Juri -->
+              <td class="p-1 border-r-2 border-slate-300 text-center bg-emerald-50/20">
+                <input type="text"
+                       name="murid_{{ r.anggota.id }}_tp_{{ item.nomor }}_juri"
+                       id="tp_{{ r.anggota.id }}_{{ item.nomor }}_juri"
+                       data-anggota="{{ r.anggota.id }}"
+                       data-tp="{{ item.nomor }}"
+                       data-sub="juri"
+                       value="{{ item.juri }}"
+                       placeholder="1-4"
+                       class="tp-koku-cell w-full px-1 py-1.5 bg-white border border-slate-200 focus:border-emerald-500 rounded text-xs font-mono font-bold text-center text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                       oninput="calculateKokuRow('{{ r.anggota.id }}')"
+                       onkeydown="handleKokuKey(event, '{{ r.anggota.id }}', {{ item.nomor }}, 'juri')">
               </td>
               {% endfor %}
 
-              <!-- Rata-rata Nilai -->
+              <!-- Rata-rata Nilai (Skala 4) -->
               <td class="p-1 border-r border-slate-300 bg-slate-50 text-center">
                 <input type="text"
                        name="murid_{{ r.anggota.id }}_rata_rata"
                        id="na_{{ r.anggota.id }}"
                        readonly
                        value="{{ r.rata_rata }}"
+                       placeholder="0.00"
                        class="w-full px-1 py-1.5 bg-slate-100 border border-transparent rounded text-xs font-mono font-black text-center text-blue-900 outline-none cursor-default">
               </td>
 
@@ -161,18 +222,18 @@
                        class="w-full px-1 py-1.5 bg-slate-100 border border-transparent rounded text-xs font-mono font-black text-center text-slate-800 outline-none cursor-default">
               </td>
 
-              <!-- Deskripsi Narasi Capaian Rapor -->
+              <!-- Deskripsi Gabungan Narasi Capaian Rapor -->
               <td class="p-1.5">
                 <textarea name="murid_{{ r.anggota.id }}_deskripsi"
                           id="desk_{{ r.anggota.id }}"
                           rows="2"
-                          placeholder="Dirumuskan otomatis dari capaian TP tertinggi..."
+                          placeholder="Dirumuskan otomatis gabungan dari ke-7 capaian TP..."
                           class="w-full px-2.5 py-1.5 bg-white border border-slate-200 focus:border-blue-400 rounded-lg text-[11px] leading-relaxed text-slate-800 focus:ring-1 focus:ring-blue-500 outline-none transition">{{ r.deskripsi }}</textarea>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="12" class="py-12 text-center text-slate-400">
+              <td colspan="19" class="py-12 text-center text-slate-400">
                 Belum ada murid di kelas ini.
               </td>
             </tr>
@@ -182,9 +243,9 @@
       </div>
 
       <!-- Footer Action -->
-      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <span class="text-xs text-slate-500">
-          💡 Predikat: A (85-100), B (75-84), C (65-74), D (&lt;65). Narasi dapat disunting manual sebelum disimpan.
+          💡 Rata-rata 2 kolom (Observasi & Juri) skala 4: <strong>A</strong> (&ge;3.20), <strong>B</strong> (2.80-3.19), <strong>C</strong> (2.40-2.79), <strong>D</strong> (&lt;2.40). Narasi gabungan dapat disunting manual sebelum disimpan.
         </span>
         <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -212,22 +273,62 @@ function toggleTpAccordion() {
   }
 }
 
+// Konversi nilai skala 4 ke Predikat dan Keterangan
+function getKokuPredikatAndKet(val) {
+  if (val === null || isNaN(val)) return { pred: 'A', ket: 'sangat baik' };
+  if (val > 4.0) val = Math.min(4.0, Number((val / 25.0).toFixed(2)));
+  if (val >= 3.20) return { pred: 'A', ket: 'sangat baik' };
+  if (val >= 2.80) return { pred: 'B', ket: 'baik' };
+  if (val >= 2.40) return { pred: 'C', ket: 'cukup baik' };
+  return { pred: 'D', ket: 'perlu bimbingan' };
+}
+
+// Hitung 1 baris siswa secara realtime
 function calculateKokuRow(anggotaId) {
-  const scores = [];
-  let maxScore = -1;
-  let maxTp = null;
+  const tpList = [];
+  const allAverages = [];
 
   for (let i = 1; i <= 7; i++) {
-    const inp = document.getElementById('tp_' + anggotaId + '_' + i);
-    if (inp && inp.value.trim() !== '') {
-      const val = parseFloat(inp.value.trim().replace(',', '.'));
-      if (!isNaN(val)) {
-        scores.push(val);
-        if (val > maxScore) {
-          maxScore = val;
-          maxTp = i;
-        }
+    const obsInp = document.getElementById('tp_' + anggotaId + '_' + i + '_obs');
+    const juriInp = document.getElementById('tp_' + anggotaId + '_' + i + '_juri');
+
+    let obsVal = null;
+    let juriVal = null;
+
+    if (obsInp && obsInp.value.trim() !== '') {
+      let v = parseFloat(obsInp.value.trim().replace(',', '.'));
+      if (!isNaN(v)) {
+        if (v > 4.0) v = Math.min(4.0, Number((v / 25.0).toFixed(2)));
+        obsVal = v;
       }
+    }
+    if (juriInp && juriInp.value.trim() !== '') {
+      let v = parseFloat(juriInp.value.trim().replace(',', '.'));
+      if (!isNaN(v)) {
+        if (v > 4.0) v = Math.min(4.0, Number((v / 25.0).toFixed(2)));
+        juriVal = v;
+      }
+    }
+
+    let avgTp = null;
+    if (obsVal !== null && juriVal !== null) {
+      avgTp = Number(((obsVal + juriVal) / 2.0).toFixed(2));
+    } else if (obsVal !== null) {
+      avgTp = obsVal;
+    } else if (juriVal !== null) {
+      avgTp = juriVal;
+    }
+
+    if (avgTp !== null) {
+      const conv = getKokuPredikatAndKet(avgTp);
+      allAverages.push(avgTp);
+      tpList.push({
+        nomor: i,
+        avg: avgTp,
+        pred: conv.pred,
+        ket: conv.ket,
+        desc: TP_DESCRIPTIONS[i] || ("aspek ke-" + i)
+      });
     }
   }
 
@@ -235,23 +336,33 @@ function calculateKokuRow(anggotaId) {
   const predInp = document.getElementById('pred_' + anggotaId);
   const deskInp = document.getElementById('desk_' + anggotaId);
 
-  if (scores.length > 0) {
-    const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
-    if (naInp) naInp.value = avg;
+  if (allAverages.length > 0) {
+    const overallAvg = Number((allAverages.reduce((a, b) => a + b, 0) / allAverages.length).toFixed(2));
+    const overallConv = getKokuPredikatAndKet(overallAvg);
 
-    let pred = 'A';
-    if (avg >= 85) pred = 'A';
-    else if (avg >= 75) pred = 'B';
-    else if (avg >= 65) pred = 'C';
-    else pred = 'D';
-    if (predInp) predInp.value = pred;
+    if (naInp) naInp.value = overallAvg.toFixed(2);
+    if (predInp) predInp.value = overallConv.pred;
 
-    // Rumuskan draf narasi jika deskripsi masih kosong
-    if (deskInp && (!deskInp.value || deskInp.dataset.autogen === 'true' || deskInp.value.trim() === '')) {
-      const descBest = TP_DESCRIPTIONS[maxTp] || ("aspek TP " + maxTp);
-      const cleanDesc = descBest.replace(/\.$/, '');
-      deskInp.value = `Murid sangat baik dan konsisten dalam ${cleanDesc.toLowerCase()}.`;
-      deskInp.dataset.autogen = 'true';
+    // Susun gabungan narasi deskripsi ke-7 TP
+    const phrases = tpList.map(item => {
+      let raw = (item.desc || '').trim();
+      if (raw.toLowerCase().startsWith('murid ')) {
+        raw = raw.substring(6).trim();
+      }
+      let clean = raw.length > 1 ? raw.charAt(0).toLowerCase() + raw.slice(1) : raw.toLowerCase();
+      clean = clean.replace(/\.+$/, '');
+      return `${item.ket} dalam ${clean}`;
+    });
+
+    let gabungan = '';
+    if (phrases.length === 1) {
+      gabungan = `Murid ${phrases[0]}.`;
+    } else if (phrases.length > 1) {
+      gabungan = `Murid ${phrases.slice(0, -1).join(', ')}, serta ${phrases[phrases.length - 1]}.`;
+    }
+
+    if (deskInp && gabungan) {
+      deskInp.value = gabungan;
     }
   } else {
     if (naInp) naInp.value = '';
@@ -259,8 +370,17 @@ function calculateKokuRow(anggotaId) {
   }
 }
 
-function handleKokuKey(event, anggotaId, tpNum) {
-  const rows = Array.from(document.querySelectorAll('#kokuTable tbody tr'));
+// Hitung ulang semua baris siswa
+function recalculateAllKokuRows() {
+  const rows = document.querySelectorAll('#kokuTable tbody tr[data-anggota-id]');
+  rows.forEach(r => {
+    calculateKokuRow(r.dataset.anggotaId);
+  });
+}
+
+// Navigasi keyboard layaknya spreadsheet
+function handleKokuKey(event, anggotaId, tpNum, subType) {
+  const rows = Array.from(document.querySelectorAll('#kokuTable tbody tr[data-anggota-id]'));
   const currentRow = document.getElementById('row_' + anggotaId);
   const currentIndex = rows.indexOf(currentRow);
 
@@ -269,7 +389,7 @@ function handleKokuKey(event, anggotaId, tpNum) {
     if (currentIndex < rows.length - 1) {
       const nextRow = rows[currentIndex + 1];
       const nextId = nextRow.dataset.anggotaId;
-      const target = document.getElementById('tp_' + nextId + '_' + tpNum);
+      const target = document.getElementById('tp_' + nextId + '_' + tpNum + '_' + subType);
       if (target) target.focus();
     }
   } else if (event.key === 'ArrowUp') {
@@ -277,20 +397,28 @@ function handleKokuKey(event, anggotaId, tpNum) {
     if (currentIndex > 0) {
       const prevRow = rows[currentIndex - 1];
       const prevId = prevRow.dataset.anggotaId;
-      const target = document.getElementById('tp_' + prevId + '_' + tpNum);
+      const target = document.getElementById('tp_' + prevId + '_' + tpNum + '_' + subType);
       if (target) target.focus();
     }
-  } else if (event.key === 'ArrowRight' && tpNum < 7) {
-    const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum + 1));
-    if (target && target.selectionStart === target.value.length) {
+  } else if (event.key === 'ArrowRight') {
+    if (subType === 'obs') {
       event.preventDefault();
-      target.focus();
+      const target = document.getElementById('tp_' + anggotaId + '_' + tpNum + '_juri');
+      if (target) target.focus();
+    } else if (subType === 'juri' && tpNum < 7) {
+      event.preventDefault();
+      const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum + 1) + '_obs');
+      if (target) target.focus();
     }
-  } else if (event.key === 'ArrowLeft' && tpNum > 1) {
-    const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum - 1));
-    if (target && target.selectionStart === 0) {
+  } else if (event.key === 'ArrowLeft') {
+    if (subType === 'juri') {
       event.preventDefault();
-      target.focus();
+      const target = document.getElementById('tp_' + anggotaId + '_' + tpNum + '_obs');
+      if (target) target.focus();
+    } else if (subType === 'obs' && tpNum > 1) {
+      event.preventDefault();
+      const target = document.getElementById('tp_' + anggotaId + '_' + (tpNum - 1) + '_juri');
+      if (target) target.focus();
     }
   }
 }

@@ -170,6 +170,9 @@
             <a href="{% if current_kelas %}{% url 'ekskul_matrix_kelas' kelas_id=current_kelas.id %}{% else %}{% url 'ekskul_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'ekskul_matrix ekskul_matrix_kelas' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">🏃</span> <span>Ekstrakurikuler</span>
             </a>
+            <a href="{% if current_kelas %}{% url 'prestasi_matrix_kelas' kelas_id=current_kelas.id %}{% else %}{% url 'prestasi_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'prestasi_matrix prestasi_matrix_kelas' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
+              <span class="text-sm">🏆</span> <span>Prestasi Murid</span>
+            </a>
             <a href="{% if current_kelas %}{% url 'rekap_absen_input' kelas_id=current_kelas.id %}{% else %}{% url 'nilai_matrix' %}{% endif %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'rekap_absen_input' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">📅</span> <span>Rekap Kehadiran (S/I/A)</span>
             </a>

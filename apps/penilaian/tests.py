@@ -130,6 +130,23 @@ class PenilaianTests(TestCase):
         self.assertContains(response, "1 Bilal bin Rabah")
         self.assertContains(response, "Ekstrakurikuler & Prestasi")
 
+    def test_prestasi_matrix_view(self):
+        url = reverse('prestasi_matrix_kelas', kwargs={'kelas_id': self.kelas_1.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Muhammad Arhan Al-Fatih")
+        self.assertContains(response, "Matriks Prestasi Murid")
+
+        post_data = {
+            f'murid_{self.anggota.id}_prestasi_1_jenis': 'Juara 1 MTQ',
+            f'murid_{self.anggota.id}_prestasi_1_keterangan': 'Tingkat Kabupaten Sleman',
+        }
+        res_post = self.client.post(url, post_data, follow=True)
+        self.assertEqual(res_post.status_code, 200)
+        p = PrestasiMurid.objects.get(anggota_kelas=self.anggota, urutan=1)
+        self.assertEqual(p.jenis_prestasi, 'Juara 1 MTQ')
+        self.assertEqual(p.keterangan, 'Tingkat Kabupaten Sleman')
+
     def test_matrix_tp_post_and_save(self):
         url = reverse('nilai_mupel_input', kwargs={'pembelajaran_id': self.pembelajaran.id})
         post_data = {
@@ -196,27 +213,39 @@ class PenilaianTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Muhammad Arhan Al-Fatih")
-        self.assertContains(response, "TP1")
-        self.assertContains(response, "TP7")
+        self.assertContains(response, "TP 1")
+        self.assertContains(response, "TP 7")
+        self.assertContains(response, "Obs")
+        self.assertContains(response, "Juri")
 
-        # POST input nilai TP 1-7
+        # POST input nilai TP 1-7 skala 4 (Observasi & Juri)
         post_data = {
-            f'murid_{self.anggota.id}_tp_1': '90',
-            f'murid_{self.anggota.id}_tp_2': '85',
-            f'murid_{self.anggota.id}_tp_3': '88',
-            f'murid_{self.anggota.id}_tp_4': '92',
-            f'murid_{self.anggota.id}_tp_5': '86',
-            f'murid_{self.anggota.id}_tp_6': '84',
-            f'murid_{self.anggota.id}_tp_7': '90',
+            f'murid_{self.anggota.id}_tp_1_obs': '3.6',
+            f'murid_{self.anggota.id}_tp_1_juri': '3.4',
+            f'murid_{self.anggota.id}_tp_2_obs': '3.0',
+            f'murid_{self.anggota.id}_tp_2_juri': '3.0',
+            f'murid_{self.anggota.id}_tp_3_obs': '3.8',
+            f'murid_{self.anggota.id}_tp_3_juri': '3.8',
+            f'murid_{self.anggota.id}_tp_4_obs': '3.5',
+            f'murid_{self.anggota.id}_tp_4_juri': '3.5',
+            f'murid_{self.anggota.id}_tp_5_obs': '3.2',
+            f'murid_{self.anggota.id}_tp_5_juri': '3.2',
+            f'murid_{self.anggota.id}_tp_6_obs': '3.7',
+            f'murid_{self.anggota.id}_tp_6_juri': '3.7',
+            f'murid_{self.anggota.id}_tp_7_obs': '3.5',
+            f'murid_{self.anggota.id}_tp_7_juri': '3.5',
         }
         res_post = self.client.post(url, post_data, follow=True)
         self.assertEqual(res_post.status_code, 200)
 
         koku = KokurikulerNilai.objects.get(anggota_kelas=self.anggota, semester=self.sem)
-        self.assertGreater(koku.nilai_angka, 80)
+        self.assertGreaterEqual(koku.nilai_angka, 3.2)
         self.assertEqual(koku.predikat, 'A')
-        self.assertEqual(koku.tp_scores.get('1'), 90.0)
-        self.assertTrue(len(koku.deskripsi) > 10)
+        self.assertEqual(koku.tp_scores.get('1'), 3.5)
+        self.assertEqual(koku.tp_scores.get('1_obs'), 3.6)
+        self.assertEqual(koku.tp_scores.get('1_juri'), 3.4)
+        self.assertIn("sangat baik dalam", koku.deskripsi)
+        self.assertIn("baik dalam", koku.deskripsi)
 
     def test_kokurikuler_tp_list_get_and_post(self):
         url = reverse('kokurikuler_tp_list') + "?tingkat=1&sem=1"

@@ -115,6 +115,8 @@ class AuthAndDashboardTest(TestCase):
         self.assertEqual(self.client.get(reverse('kelas_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('murid_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('kokurikuler_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('ekskul_matrix_kelas', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('prestasi_matrix_kelas', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('ekskul_prestasi_kelas', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('ekskul_prestasi_input', kwargs={'anggota_id': anggota.id})).status_code, 302)
         self.assertEqual(self.client.get(reverse('rekap_absen_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)

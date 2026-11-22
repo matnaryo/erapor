@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Matriks Prestasi Murid - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Matriks Prestasi Murid (Halaman 5 Rapor){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Bar: Filter Kelas & Info -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+          Halaman 5 Rapor Resmi
+        </span>
+        <span class="text-xs text-slate-500">Maksimal 6 Prestasi / Penghargaan per Murid</span>
+      </div>
+      <h2 class="text-xl font-black tracking-tight text-slate-900">
+        Matriks Prestasi Murid &bull; Kelas {{ selected_kelas.nama|default:'-' }}
+      </h2>
+      <p class="text-xs text-slate-500 mt-0.5">
+        Isikan jenis prestasi (akademik/non-akademik) dan keterangan singkat. Dokumen rapor hanya akan memunculkan prestasi yang diisi.
+      </p>
+    </div>
+
+    <form method="get" class="flex flex-wrap items-center gap-3">
+      <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Rombel:</label>
+      <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        {% for k in kelas_list %}
+        <option value="{{ k.id }}" {% if selected_kelas and selected_kelas.id == k.id %}selected{% endif %}>
+          Kelas {{ k.nama }} (Fase {{ k.fase.kode }})
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if selected_kelas %}
+  <!-- FORM MATRIKS PRESTASI -->
+  <form id="prestasiMatrixForm" method="POST" action="{% url 'prestasi_matrix_kelas' selected_kelas.id %}">
+    {% csrf_token %}
+
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+      <!-- Toolbar Header -->
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-slate-700">Tabel Spreadsheet Prestasi ({{ row_data|length }} Siswa)</span>
+          <span class="text-[11px] text-slate-500">&mdash; Wali kelas dapat langsung mengisi jenis prestasi dan keterangan di bawah.</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="{% url 'ekskul_matrix_kelas' selected_kelas.id %}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            🏃 Matriks Ekstrakurikuler
+          </a>
+          <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Simpan Catatan Prestasi
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Matrix Table -->
+      <div class="overflow-x-auto relative max-h-[750px]">
+        <table class="w-full text-left border-collapse text-xs">
+          <!-- Sticky Table Head -->
+          <thead class="sticky top-0 z-30 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[11px]">
+            <!-- Baris 1: Header Kelompok Prestasi 1-6 -->
+            <tr>
+              <th scope="col" rowspan="2" class="py-3 px-3 w-10 text-center sticky left-0 z-40 bg-slate-100 border-r border-slate-200">
+                No
+              </th>
+              <th scope="col" rowspan="2" class="py-3 px-4 min-w-[190px] w-48 sticky left-10 z-40 bg-slate-100 border-r-2 border-slate-300 shadow-xs">
+                Nama Siswa
+              </th>
+
+              <!-- 6 Kelompok Kolom Prestasi -->
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-amber-50/90 text-amber-950 border-r-2 border-slate-300 font-black">
+                Prestasi 1
+              </th>
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-blue-50/90 text-blue-950 border-r-2 border-slate-300 font-black">
+                Prestasi 2
+              </th>
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-emerald-50/90 text-emerald-950 border-r-2 border-slate-300 font-black">
+                Prestasi 3
+              </th>
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-purple-50/90 text-purple-950 border-r-2 border-slate-300 font-black">
+                Prestasi 4
+              </th>
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-teal-50/90 text-teal-950 border-r-2 border-slate-300 font-black">
+                Prestasi 5
+              </th>
+              <th scope="col" colspan="2" class="py-2.5 px-2 text-center bg-rose-50/90 text-rose-950 border-r border-slate-300 font-black">
+                Prestasi 6
+              </th>
+            </tr>
+
+            <!-- Baris 2: Sub-kolom (Jenis Prestasi & Keterangan) -->
+            <tr class="text-[10px] bg-slate-50 border-b border-slate-300">
+              {% for i in slot_range %}
+              <th scope="col" class="py-2 px-2 min-w-[160px] w-44 border-r border-slate-200">Jenis Prestasi</th>
+              <th scope="col" class="py-2 px-2 min-w-[210px] w-64 {% if forloop.last %}border-r border-slate-300{% else %}border-r-2 border-slate-300{% endif %}">Keterangan</th>
+              {% endfor %}
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-200">
+            {% for row in row_data %}
+            <tr class="hover:bg-slate-50/70 transition-colors">
+              <!-- Sticky No Absen -->
+              <td class="py-2.5 px-3 text-center font-bold text-slate-500 font-mono sticky left-0 z-20 bg-white border-r border-slate-200">
+                {{ row.anggota.nomor_absen|default:forloop.counter }}
+              </td>
+
+              <!-- Sticky Nama Siswa -->
+              <td class="py-2.5 px-4 sticky left-10 z-20 bg-white border-r-2 border-slate-300 shadow-xs">
+                <div class="font-bold text-slate-900 truncate max-w-[180px]">{{ row.anggota.murid.nama_lengkap }}</div>
+                <div class="text-[10px] text-slate-400 font-mono">NISN: {{ row.anggota.murid.nisn }}</div>
+              </td>
+
+              <!-- 6 Kelompok Kolom Prestasi -->
+              {% for s in row.slots %}
+              <!-- Jenis Prestasi -->
+              <td class="p-1 border-r border-slate-200">
+                <input type="text"
+                       name="murid_{{ row.anggota.id }}_prestasi_{{ s.urutan }}_jenis"
+                       value="{{ s.jenis }}"
+                       placeholder="Contoh: Juara 1 MTQ..."
+                       class="w-full px-2 py-1.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 focus:border-amber-500 rounded text-xs font-semibold text-slate-800 focus:ring-1 focus:ring-amber-500 outline-none transition-colors">
+              </td>
+
+              <!-- Keterangan -->
+              <td class="p-1 {% if forloop.last %}border-r border-slate-300{% else %}border-r-2 border-slate-300{% endif %}">
+                <input type="text"
+                       name="murid_{{ row.anggota.id }}_prestasi_{{ s.urutan }}_keterangan"
+                       value="{{ s.keterangan }}"
+                       placeholder="Contoh: Tingkat Kabupaten Sleman..."
+                       class="w-full px-2 py-1.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 focus:border-amber-500 rounded text-xs text-slate-700 focus:ring-1 focus:ring-amber-500 outline-none transition-colors">
+              </td>
+              {% endfor %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="14" class="py-12 text-center text-slate-400">
+                Belum ada murid yang terdaftar di kelas ini.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer Action Bar -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-slate-500">
+          * Sel yang dibiarkan kosong tidak akan tercetak di Halaman 5 dokumen rapor resmi.
+        </p>
+        <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Simpan Catatan Prestasi
+        </button>
+      </div>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
