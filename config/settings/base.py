@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env', override=True)
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'insecure-key-erapor-lhs-sdit-luqman-al-hakim-sleman-2026')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
@@ -116,6 +116,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Local AI Configuration (Ollama on Dell T30)
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b')
+if not OLLAMA_MODEL or 'qwen3' in OLLAMA_MODEL.lower():
+    OLLAMA_MODEL = 'qwen2.5:1.5b'
 
 # School Profile Defaults
 DEFAULT_KOTA = os.getenv('DEFAULT_KOTA', 'Sleman')

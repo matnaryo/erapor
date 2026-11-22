@@ -178,7 +178,7 @@
             </a>
             <a href="{% if current_kelas %}{% url 'ai_generate_notes_kelas' kelas_id=current_kelas.id %}{% else %}{% url 'ai_generate_notes_default' %}{% endif %}" class="flex items-center justify-between px-3 py-1.5 rounded-lg font-semibold transition {% if request.resolver_match.url_name in 'ai_generate_notes_kelas ai_generate_notes_default' %}bg-purple-100 text-purple-900 border border-purple-300{% else %}text-purple-700 bg-purple-50 hover:bg-purple-100/80 border border-purple-200{% endif %}">
               <div class="flex items-center gap-2">
-                <span>🤖</span> <span>Catatan AI (1 Kelas)</span>
+                <span>🤖</span> <span>Catatan AI</span>
               </div>
               <span class="text-[9px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold shadow-2xs">Massal</span>
             </a>

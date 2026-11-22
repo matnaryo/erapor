@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'))
 OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate")
 # Model Qwen lokal yang aktif digunakan (default: qwen2.5:1.5b)
-OLLAMA_MODEL = getattr(settings, 'OLLAMA_MODEL', os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b'))
+OLLAMA_MODEL = getattr(settings, 'OLLAMA_MODEL', 'qwen2.5:1.5b')
+if not OLLAMA_MODEL or 'qwen3' in OLLAMA_MODEL.lower():
+    OLLAMA_MODEL = 'qwen2.5:1.5b'
 
 def generate_wali_kelas_note(
     nama_murid,
