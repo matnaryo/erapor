@@ -71,7 +71,7 @@
                     </div>
                     {% if r.is_ai %}
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
-                        Didukung AI
+                        Didukung {{ ai_model_name|default:'qwen2.5:1.5b' }}
                     </span>
                     {% endif %}
                 </div>

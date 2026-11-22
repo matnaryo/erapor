@@ -1,8 +1,9 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
 from apps.core.models import Sekolah
-from apps.master_akademik.models import AnggotaKelas, Kelas, Semester
+from apps.master_akademik.models import AnggotaKelas, Kelas, Semester, TahunAjaran
 from apps.kurikulum.models import PembelajaranKelas
 from apps.penilaian.models import (
     NilaiAkhir, KokurikulerNilai, EkstrakurikulerNilai,
@@ -151,17 +152,59 @@ def cover_print_view(request, anggota_id):
 
 @login_required(login_url='login')
 @role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
-def class_print_list_view(request, kelas_id):
+def class_print_list_view(request, kelas_id=None):
     """
     Pusat Cetak Dokumen Rapor & Kover 1 Rombongan Belajar.
-    Memudahkan Wali Kelas mencetak rapor dan kover per murid secara tertata.
+    Memudahkan pencetakan rapor dan kover per murid secara tertata.
+    Superuser / Admin / Kurikulum dapat berganti kelas secara leluasa melalui pilihan kelas.
+    Wali Kelas dikunci pada kelas asuhan masing-masing.
     """
-    kelas = get_object_or_404(Kelas.objects.select_related('wali_kelas', 'fase', 'tahun_ajaran'), id=kelas_id)
+    user = request.user
+    pendidik = getattr(user, 'profil_pendidik', None)
+    is_admin = user.is_superuser or (pendidik and pendidik.role in ['SUPERADMIN', 'KURIKULUM', 'KEPALA_SEKOLAH'])
+
     sem_aktif = Semester.objects.filter(is_active=True).first()
+    ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
+
+    if is_admin:
+        kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase').order_by('tingkat', 'nama') if ta_aktif else Kelas.objects.all().select_related('wali_kelas', 'fase').order_by('tingkat', 'nama')
+    elif pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_list = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase').order_by('tingkat', 'nama') if ta_aktif else pendidik.kelas_asuhan.all().select_related('wali_kelas', 'fase').order_by('tingkat', 'nama')
+    else:
+        kelas_list = Kelas.objects.none()
+
+    # Pergantian kelas melalui query param ?kelas=
+    target_param = request.GET.get('kelas')
+    if target_param:
+        try:
+            target_id = int(target_param)
+            if target_id != kelas_id:
+                return redirect('class_print_list', kelas_id=target_id)
+        except (ValueError, TypeError):
+            pass
+
+    # Jika kelas_id belum diberikan, ambil kelas pertama yang tersedia
+    if not kelas_id:
+        if kelas_list.exists():
+            return redirect('class_print_list', kelas_id=kelas_list.first().id)
+        else:
+            messages.error(request, "Belum ada rombel kelas yang terdaftar.")
+            return redirect('dashboard')
+
+    kelas = get_object_or_404(Kelas.objects.select_related('wali_kelas', 'fase', 'tahun_ajaran'), id=kelas_id)
+
+    # Validasi wewenang jika wali kelas murni (bukan admin)
+    if not is_admin and pendidik and pendidik.role == 'WALI_KELAS':
+        if kelas.wali_kelas_id != pendidik.id:
+            messages.error(request, "Akses ditolak: Anda hanya berwenang mencetak dokumen untuk kelas asuhan Anda.")
+            return redirect('dashboard')
+
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
 
     context = {
         'kelas': kelas,
+        'kelas_list': kelas_list,
+        'is_admin': is_admin,
         'sem_aktif': sem_aktif,
         'anggota_list': anggota_list,
     }

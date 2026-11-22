@@ -270,7 +270,7 @@ def kokurikuler_tp_view(request):
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
     pendidik = getattr(request.user, 'profil_pendidik', None)
 
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
         selected_tingkat = kelas_asuhan.tingkat if kelas_asuhan else 1
     else:

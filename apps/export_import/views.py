@@ -22,7 +22,7 @@ def export_import_center_view(request):
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama')
     
     pendidik = getattr(request.user, 'profil_pendidik', None)
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
         selected_kelas = kelas_asuhan
         kelas_list = Kelas.objects.filter(id=kelas_asuhan.id) if kelas_asuhan else Kelas.objects.none()

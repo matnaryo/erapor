@@ -859,9 +859,10 @@ def ekskul_prestasi_kelas_view(request, kelas_id):
     kelas = get_object_or_404(Kelas, id=kelas_id)
     sem_aktif = Semester.objects.filter(is_active=True).first()
 
-    user_role = getattr(request.user, 'role', 'GURU_MAPEL')
-    if user_role == 'WALI_KELAS' and hasattr(request.user, 'profil_pendidik'):
-        if kelas.wali_kelas_id != request.user.profil_pendidik.id:
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    user_role = pendidik.role if pendidik else ('SUPERADMIN' if request.user.is_superuser else 'GURU_MAPEL')
+    if (not request.user.is_superuser) and user_role == 'WALI_KELAS' and pendidik:
+        if kelas.wali_kelas_id != pendidik.id:
             messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
             return redirect('dashboard')
 
@@ -906,9 +907,10 @@ def ekskul_prestasi_input_view(request, anggota_id):
     anggota = get_object_or_404(AnggotaKelas.objects.select_related('murid', 'kelas'), id=anggota_id)
     sem_aktif = Semester.objects.filter(is_active=True).first()
 
-    user_role = getattr(request.user, 'role', 'GURU_MAPEL')
-    if user_role == 'WALI_KELAS' and hasattr(request.user, 'profil_pendidik'):
-        if anggota.kelas.wali_kelas_id != request.user.profil_pendidik.id:
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+    user_role = pendidik.role if pendidik else ('SUPERADMIN' if request.user.is_superuser else 'GURU_MAPEL')
+    if (not request.user.is_superuser) and user_role == 'WALI_KELAS' and pendidik:
+        if anggota.kelas.wali_kelas_id != pendidik.id:
             messages.error(request, "Anda hanya berwenang mengelola data kelas yang Anda ampu sebagai wali kelas.")
             return redirect('dashboard')
 

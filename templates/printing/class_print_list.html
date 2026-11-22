@@ -7,7 +7,7 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Header Banner -->
-    <div class="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 rounded-xl p-6 text-white shadow-md">
+    <div class="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 rounded-2xl p-6 text-white shadow-md">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
@@ -18,53 +18,129 @@
                     Format cetak telah diaudit matematis dengan presisi tinggi. Layout 6 halaman rapor dan 3 halaman kover dijamin tidak terpotong margin bawah, bebas orphan header, dan judul kolom berulang otomatis.
                 </p>
             </div>
-            <div class="flex items-center gap-2">
-                <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors border border-slate-700">
-                    &larr; Matriks Penilaian
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Dropdown Pilihan Rombel / Kelas (Superuser / Admin) -->
+                {% if is_admin and kelas_list|length > 1 %}
+                <form method="get" action="{% url 'class_print_default' %}" class="flex items-center gap-2 bg-slate-800/90 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-slate-700 shadow-inner">
+                    <label for="selectRombelPrint" class="text-xs font-bold text-emerald-300 whitespace-nowrap flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <span>Pilih Rombel:</span>
+                    </label>
+                    <select id="selectRombelPrint" name="kelas" onchange="window.location.href='{% url 'class_print_default' %}kelas/' + this.value + '/'" class="bg-slate-900 text-white text-xs font-bold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer">
+                        {% for k in kelas_list %}
+                        <option value="{{ k.id }}" {% if kelas and kelas.id == k.id %}selected{% endif %}>
+                            Kelas {{ k.nama }} (Fase {{ k.fase.kode|default:'-' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
+
+                <a href="{% url 'nilai_matrix' %}?kelas={{ kelas.id }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors border border-slate-700 flex items-center gap-1.5">
+                    <span>&larr;</span> Matriks Penilaian
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Student Print Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-base">Daftar Murid Kelas {{ kelas.nama }} ({{ anggota_list|length }} Murid)</h3>
-            <span class="text-xs text-slate-500 font-medium">Semester {{ sem_aktif.semester }} ({{ sem_aktif.tahun_ajaran.nama }})</span>
+    <!-- Class Switcher Tabs (Superuser / Admin) -->
+    {% if is_admin and kelas_list|length > 1 %}
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-3.5 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            Pindah Rombel:
+        </span>
+        <div class="flex items-center gap-1.5 flex-nowrap">
+            {% for k in kelas_list %}
+            <a href="{% url 'class_print_list' kelas_id=k.id %}" 
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 
+               {% if k.id == kelas.id %}
+                 bg-emerald-700 text-white shadow-xs
+               {% else %}
+                 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200
+               {% endif %}">
+              <span>Kelas {{ k.nama }}</span>
+              <span class="text-[10px] opacity-80">(Fase {{ k.fase.kode|default:'-' }})</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Student Print Table Card -->
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <span>Daftar Murid Kelas {{ kelas.nama }}</span>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        {{ anggota_list|length }} Murid Siap Cetak
+                    </span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    {% if kelas.wali_kelas %}
+                    Wali Kelas: <strong>{{ kelas.wali_kelas.nama_lengkap }}</strong> &bull;
+                    {% endif %}
+                    Fase {{ kelas.fase.kode|default:'-' }} &bull; Semester {{ sem_aktif.semester }} ({{ sem_aktif.tahun_ajaran.nama }})
+                </p>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold border border-blue-200 text-[11px]">
+                    📄 Kover: 3 Halaman
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[11px]">
+                    📘 Rapor: 6 Halaman
+                </span>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
-                        <th class="py-3 px-4 w-12 text-center">Absen</th>
-                        <th class="py-3 px-4 w-28">NISN</th>
-                        <th class="py-3 px-4">Nama Lengkap Murid</th>
-                        <th class="py-3 px-4 text-center w-40">Dokumen Kover</th>
-                        <th class="py-3 px-4 text-center w-44">Dokumen Rapor</th>
+                        <th class="py-3.5 px-4 w-12 text-center">Absen</th>
+                        <th class="py-3.5 px-4 w-32">NISN</th>
+                        <th class="py-3.5 px-4">Nama Lengkap Murid</th>
+                        <th class="py-3.5 px-4 text-center w-44">Dokumen Kover</th>
+                        <th class="py-3.5 px-4 text-center w-48">Dokumen Rapor</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for a in anggota_list %}
-                    <tr class="hover:bg-slate-50/70 transition-colors">
-                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ a.nomor_absen|default:forloop.counter }}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-slate-600">{{ a.murid.nisn }}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">{{ a.murid.nama_lengkap }}</td>
-                        <td class="py-3 px-4 text-center">
-                            <a href="{% url 'cover_print' anggota_id=a.id %}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors shadow-xs">
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4 text-center font-bold text-slate-500">
+                            {{ a.nomor_absen|default:forloop.counter }}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-slate-600">
+                            {{ a.murid.nisn }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-800">{{ a.murid.nama_lengkap }}</div>
+                            <div class="text-[11px] text-slate-400 font-mono">
+                                NIS: {{ a.murid.nis|default:'-' }} &bull; JK: {{ a.murid.get_jenis_kelamin_display|default:a.murid.jenis_kelamin }}
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <a href="{% url 'cover_print' anggota_id=a.id %}" target="_blank" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition shadow-2xs w-full sm:w-auto">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                Cetak Kover (3 Hal)
+                                <span>Cetak Kover (3 Hal)</span>
                             </a>
                         </td>
-                        <td class="py-3 px-4 text-center">
-                            <a href="{% url 'rapor_print' anggota_id=a.id %}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition-colors shadow-sm">
+                        <td class="py-3.5 px-4 text-center">
+                            <a href="{% url 'rapor_print' anggota_id=a.id %}" target="_blank" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-xs w-full sm:w-auto">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                Cetak Rapor (6 Hal)
+                                <span>Cetak Rapor (6 Hal)</span>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada murid di kelas ini.</td></tr>
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-slate-400">
+                            <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            <p class="text-sm font-semibold text-slate-600">Belum ada murid di kelas ini.</p>
+                            <p class="text-xs text-slate-400 mt-1">Tambahkan murid melalui menu Data Murid atau impor data Excel.</p>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -31,7 +31,7 @@ def murid_list_view(request):
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
 
     # Wali Kelas hanya mengelola dan melihat murid di rombel binaannya
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         kelas_asuhan = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
         if kelas_asuhan:
             murid_qs = murid_qs.filter(riwayat_kelas__kelas=kelas_asuhan)
@@ -67,7 +67,7 @@ def murid_detail_view(request, pk):
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
     pendidik = getattr(request.user, 'profil_pendidik', None)
 
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         kelas_list_aktif = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif) if ta_aktif else pendidik.kelas_asuhan.all()
     else:
         kelas_list_aktif = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas') if ta_aktif else Kelas.objects.all()
@@ -86,7 +86,7 @@ def murid_create_view(request):
     pendidik = getattr(request.user, 'profil_pendidik', None)
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
 
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         target_kelas = pendidik.kelas_asuhan.filter(tahun_ajaran=ta_aktif).first() or pendidik.kelas_asuhan.first()
     else:
         target_kelas_id = request.GET.get('kelas')
@@ -188,7 +188,7 @@ def kelas_list_view(request):
     kelas_qs = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase').order_by('tingkat', 'nama')
     
     pendidik = getattr(request.user, 'profil_pendidik', None)
-    if getattr(request.user, 'role', '') == 'WALI_KELAS' and pendidik:
+    if (not request.user.is_superuser) and pendidik and pendidik.role == 'WALI_KELAS':
         kelas_qs = kelas_qs.filter(wali_kelas=pendidik)
 
     return render(request, 'master_akademik/kelas_list.html', {'kelas_list': kelas_qs, 'ta_aktif': ta_aktif})

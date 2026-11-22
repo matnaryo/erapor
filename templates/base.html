@@ -192,7 +192,7 @@
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Pusat Cetak Dokumen</div>
           <div class="space-y-1">
-            <a href="{% if current_kelas %}{% url 'class_print_list' kelas_id=current_kelas.id %}{% else %}{% url 'dashboard' %}{% endif %}" class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition">
+            <a href="{% if current_kelas %}{% url 'class_print_list' kelas_id=current_kelas.id %}{% else %}{% url 'class_print_default' %}{% endif %}" class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Rapor & Kover</span>
