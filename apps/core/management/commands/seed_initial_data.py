@@ -61,19 +61,82 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"- Tahun Ajaran {ta.nama} & Semester {sem1.semester} created")
 
-        # 4. Akun Pendidik / Wali Kelas
+        # 4. Akun Superadmin & Wali Kelas
+        # 4a. Akun Superadmin Resmi (admin)
+        user_admin, _ = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'first_name': 'Administrator',
+                'last_name': 'eLHaEs',
+                'email': 'admin@sdit-lhs.sch.id',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        user_admin.is_staff = True
+        user_admin.is_superuser = True
+        user_admin.set_password('bismillah123')
+        user_admin.save()
+
+        pendidik_admin, _ = Pendidik.objects.get_or_create(
+            user=user_admin,
+            defaults={
+                'nama_lengkap': "Administrator eLHaEs (Superadmin)",
+                'role': 'SUPERADMIN',
+                'jenis_kelamin': 'L',
+                'no_hp': '081200000001'
+            }
+        )
+        pendidik_admin.role = 'SUPERADMIN'
+        pendidik_admin.is_active = True
+        pendidik_admin.save()
+        self.stdout.write(f"- Superadmin 'admin': bismillah123")
+
+        # 4b. Akun alias 'superuser' jika pengguna login dengan username superuser
+        user_su, _ = User.objects.get_or_create(
+            username='superuser',
+            defaults={
+                'first_name': 'Superuser',
+                'last_name': 'eLHaEs',
+                'email': 'superuser@sdit-lhs.sch.id',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        user_su.is_staff = True
+        user_su.is_superuser = True
+        user_su.set_password('bismillah123')
+        user_su.save()
+
+        pendidik_su, _ = Pendidik.objects.get_or_create(
+            user=user_su,
+            defaults={
+                'nama_lengkap': "Superuser SDIT Luqman Al Hakim",
+                'role': 'SUPERADMIN',
+                'jenis_kelamin': 'L',
+                'no_hp': '081200000002'
+            }
+        )
+        pendidik_su.role = 'SUPERADMIN'
+        pendidik_su.is_active = True
+        pendidik_su.save()
+        self.stdout.write(f"- Superadmin 'superuser': bismillah123")
+
+        # 4c. Akun Wali Kelas I (irsyad_wali) - juga diberikan hak superuser agar tidak terhalang
         user_wali, _ = User.objects.get_or_create(
             username='irsyad_wali',
             defaults={
                 'first_name': 'Muhammad Nur Irsyad',
                 'last_name': 'Maulana',
                 'email': 'irsyad@sdit-lhs.sch.id',
-                'is_staff': True
+                'is_staff': True,
+                'is_superuser': True
             }
         )
-        if not user_wali.has_usable_password():
-            user_wali.set_password('bismillah123')
-            user_wali.save()
+        user_wali.is_staff = True
+        user_wali.is_superuser = True
+        user_wali.set_password('bismillah123')
+        user_wali.save()
 
         pendidik_wali, _ = Pendidik.objects.get_or_create(
             user=user_wali,
@@ -85,7 +148,7 @@ class Command(BaseCommand):
                 'no_hp': '081234567890'
             }
         )
-        self.stdout.write(f"- Wali Kelas: {pendidik_wali.nama_lengkap}")
+        self.stdout.write(f"- Wali Kelas 'irsyad_wali': {pendidik_wali.nama_lengkap}")
 
         # 5. Rombel / Kelas I
         kelas_1, _ = Kelas.objects.get_or_create(

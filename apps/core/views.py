@@ -37,17 +37,31 @@ def dashboard_view(request):
     """
     Dashboard utama yang menyesuaikan widget dan pintasan fitur
     secara dinamis berdasarkan peran RBAC pengguna yang login.
+    Mendukung penuh akun Superadmin untuk memilih dan mengelola seluruh kelas.
     """
     user = request.user
     pendidik = getattr(user, 'profil_pendidik', None)
+    
+    # Otomatis buatkan profil Pendidik jika superuser belum memilikinya
+    if user.is_superuser and not pendidik:
+        pendidik, _ = Pendidik.objects.get_or_create(
+            user=user,
+            defaults={
+                'nama_lengkap': user.get_full_name() or f"Administrator ({user.username})",
+                'role': 'SUPERADMIN',
+                'is_active': True,
+            }
+        )
+
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
     sem_aktif = Semester.objects.filter(is_active=True).first()
 
     # Statistik Umum
     total_murid = Murid.objects.filter(is_active=True).count()
-    total_kelas = Kelas.objects.filter(tahun_ajaran=ta_aktif).count() if ta_aktif else 0
+    total_kelas = Kelas.objects.filter(tahun_ajaran=ta_aktif).count() if ta_aktif else Kelas.objects.count()
     total_mupel = MataPelajaran.objects.filter(is_active=True).count()
     total_pendidik = Pendidik.objects.filter(is_active=True).count()
+    daftar_kelas_all = Kelas.objects.filter(tahun_ajaran=ta_aktif) if ta_aktif else Kelas.objects.all()
 
     context = {
         'total_murid': total_murid,
@@ -58,31 +72,41 @@ def dashboard_view(request):
         'murid_kelas_list': [],
         'jadwal_mengajar': [],
         'rekap_semua_kelas': [],
+        'daftar_semua_kelas': daftar_kelas_all,
     }
 
-    # Jika Wali Kelas (atau Superadmin)
-    if pendidik and pendidik.role == 'WALI_KELAS' or user.is_superuser:
-        kelas_wali = Kelas.objects.filter(wali_kelas=pendidik, tahun_ajaran=ta_aktif).first() if pendidik else Kelas.objects.filter(tahun_ajaran=ta_aktif).first()
-        if kelas_wali:
-            anggota_list = AnggotaKelas.objects.filter(kelas=kelas_wali).select_related('murid').order_by('nomor_absen')
-            
-            # Hitung progres pengisian
-            total_anggota = anggota_list.count()
-            catatan_terisi = CatatanWaliKelas.objects.filter(
-                anggota_kelas__in=anggota_list, 
-                semester=sem_aktif
-            ).exclude(catatan='').count() if sem_aktif else 0
+    # Penentuan kelas aktif yang ditampilkan di dasbor:
+    kelas_terpilih = None
+    kelas_param = request.GET.get('kelas')
 
-            absen_terisi = Ketidakhadiran.objects.filter(
-                anggota_kelas__in=anggota_list,
-                semester=sem_aktif
-            ).count() if sem_aktif else 0
+    if user.is_superuser:
+        if kelas_param:
+            kelas_terpilih = Kelas.objects.filter(id=kelas_param).first()
+        if not kelas_terpilih:
+            kelas_terpilih = Kelas.objects.filter(tahun_ajaran=ta_aktif).first() or Kelas.objects.first()
+    elif pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik, tahun_ajaran=ta_aktif).first()
+        if not kelas_terpilih:
+            kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik).first()
 
-            context['kelas_asuhan'] = kelas_wali
-            context['murid_kelas_list'] = anggota_list
-            context['total_anggota_kelas'] = total_anggota
-            context['catatan_wali_persen'] = int((catatan_terisi / total_anggota * 100)) if total_anggota > 0 else 0
-            context['absen_persen'] = int((absen_terisi / total_anggota * 100)) if total_anggota > 0 else 0
+    if kelas_terpilih:
+        anggota_list = AnggotaKelas.objects.filter(kelas=kelas_terpilih).select_related('murid').order_by('nomor_absen')
+        total_anggota = anggota_list.count()
+        catatan_terisi = CatatanWaliKelas.objects.filter(
+            anggota_kelas__in=anggota_list, 
+            semester=sem_aktif
+        ).exclude(catatan='').count() if sem_aktif else 0
+
+        absen_terisi = Ketidakhadiran.objects.filter(
+            anggota_kelas__in=anggota_list,
+            semester=sem_aktif
+        ).count() if sem_aktif else 0
+
+        context['kelas_asuhan'] = kelas_terpilih
+        context['murid_kelas_list'] = anggota_list
+        context['total_anggota_kelas'] = total_anggota
+        context['catatan_wali_persen'] = int((catatan_terisi / total_anggota * 100)) if total_anggota > 0 else 0
+        context['absen_persen'] = int((absen_terisi / total_anggota * 100)) if total_anggota > 0 else 0
 
     # Jika Guru Mata Pelajaran
     if pendidik:
@@ -92,16 +116,16 @@ def dashboard_view(request):
         ).select_related('kelas', 'mata_pelajaran')
         context['jadwal_mengajar'] = jadwal
 
-    # Jika Kurikulum atau Kepala Sekolah
-    if user.is_superuser or (pendidik and pendidik.role in ['KURIKULUM', 'KEPALA_SEKOLAH']):
-        kelas_all = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase')
+    # Jika Superadmin, Kurikulum, atau Kepala Sekolah
+    if user.is_superuser or (pendidik and pendidik.role in ['SUPERADMIN', 'KURIKULUM', 'KEPALA_SEKOLAH']):
+        kelas_all = Kelas.objects.filter(tahun_ajaran=ta_aktif).select_related('wali_kelas', 'fase') if ta_aktif else Kelas.objects.all().select_related('wali_kelas', 'fase')
         rekap_list = []
         for k in kelas_all:
             jml_murid = k.anggota_list.count()
             rekap_list.append({
                 'kelas': k,
                 'tingkat': k.tingkat,
-                'fase': k.fase.kode,
+                'fase': k.fase.kode if k.fase else '-',
                 'wali': k.wali_kelas.nama_lengkap if k.wali_kelas else 'Belum ditentukan',
                 'total_murid': jml_murid,
             })
