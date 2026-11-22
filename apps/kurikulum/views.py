@@ -3,14 +3,24 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.core.decorators import role_required
 from apps.master_akademik.models import Fase
-from .models import MataPelajaran, KKTPRentang, TujuanPembelajaran
+from .models import MataPelajaran, KKTPRentang, TujuanPembelajaran, PembelajaranKelas
 
 @login_required(login_url='login')
 def mupel_list_view(request):
-    """Menampilkan 11 Mata Pelajaran Resmi SDIT Luqman Al Hakim Sleman."""
+    """Menampilkan Mata Pelajaran Resmi SDIT Luqman Al Hakim Sleman."""
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+
     mupel_umum = MataPelajaran.objects.filter(kategori='UMUM', is_active=True).order_by('urutan')
     mupel_pilihan = MataPelajaran.objects.filter(kategori='PILIHAN', is_active=True).order_by('urutan')
     mupel_mulok = MataPelajaran.objects.filter(kategori='MULOK', is_active=True).order_by('urutan')
+
+    if pendidik and pendidik.role == 'GURU_MAPEL':
+        ampu_mupel_ids = PembelajaranKelas.objects.filter(
+            guru_pengampu=pendidik
+        ).values_list('mata_pelajaran_id', flat=True).distinct()
+        mupel_umum = mupel_umum.filter(id__in=ampu_mupel_ids)
+        mupel_pilihan = mupel_pilihan.filter(id__in=ampu_mupel_ids)
+        mupel_mulok = mupel_mulok.filter(id__in=ampu_mupel_ids)
 
     context = {
         'mupel_umum': mupel_umum,
@@ -77,11 +87,19 @@ def tp_list_view(request):
     fase_kode = request.GET.get('fase', 'A')
     semester = request.GET.get('sem', '1')
 
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+
     fase_list = Fase.objects.all().order_by('kode')
     mupel_list = MataPelajaran.objects.filter(is_active=True).order_by('urutan')
 
+    if pendidik and pendidik.role == 'GURU_MAPEL':
+        ampu_mupel_ids = PembelajaranKelas.objects.filter(
+            guru_pengampu=pendidik
+        ).values_list('mata_pelajaran_id', flat=True).distinct()
+        mupel_list = mupel_list.filter(id__in=ampu_mupel_ids)
+
     selected_fase = Fase.objects.filter(kode=fase_kode).first() or fase_list.first()
-    selected_mupel = MataPelajaran.objects.filter(id=mupel_id).first() if mupel_id else mupel_list.first()
+    selected_mupel = mupel_list.filter(id=mupel_id).first() if mupel_id else mupel_list.first()
 
     tp_items = []
     if selected_mupel and selected_fase:

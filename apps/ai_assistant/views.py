@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from apps.core.decorators import role_required
 from apps.master_akademik.models import Kelas, AnggotaKelas, Semester
 from apps.penilaian.models import NilaiAkhir, KokurikulerNilai, EkstrakurikulerNilai, PrestasiMurid, Ketidakhadiran, CatatanWaliKelas
 from .ollama_client import generate_wali_kelas_note, OLLAMA_MODEL
@@ -73,6 +74,7 @@ def collect_student_grade_profile(anggota, sem_aktif):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def ai_generate_notes_kelas_view(request, kelas_id):
     """
     Dashboard interaktif Asisten AI untuk Catatan Perkembangan Murid (SDIT Luqman Al Hakim Sleman).

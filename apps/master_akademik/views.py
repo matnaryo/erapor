@@ -8,6 +8,7 @@ from .models import Murid, Kelas, AnggotaKelas, TahunAjaran
 from .forms import MuridForm
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def murid_list_view(request):
     """Menampilkan daftar seluruh murid dengan fitur pencarian dan filter."""
     query = request.GET.get('q', '').strip()
@@ -47,6 +48,7 @@ def murid_list_view(request):
     return render(request, 'master_akademik/murid_list.html', context)
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def murid_detail_view(request, pk):
     """Menampilkan detail buku induk identitas murid."""
     murid = get_object_or_404(Murid, pk=pk)
@@ -157,6 +159,7 @@ def murid_tempatkan_kelas_view(request, pk):
     return redirect('murid_detail', pk=pk)
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def kelas_list_view(request):
     """Daftar rombongan belajar / kelas dan wali kelas."""
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()

@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from apps.core.decorators import role_required
 from apps.core.models import Sekolah
 from apps.master_akademik.models import AnggotaKelas, Kelas, Semester
 from apps.kurikulum.models import PembelajaranKelas
@@ -9,6 +10,7 @@ from apps.penilaian.models import (
 )
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def rapor_print_view(request, anggota_id):
     """
     Mesin Cetak Rapor Resmi 6 Halaman A4 SDIT Luqman Al Hakim Sleman.
@@ -116,6 +118,7 @@ def rapor_print_view(request, anggota_id):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def cover_print_view(request, anggota_id):
     """
     Mesin Cetak Kover Resmi 3 Halaman A4 SDIT Luqman Al Hakim Sleman.
@@ -145,6 +148,7 @@ def cover_print_view(request, anggota_id):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS', 'KEPALA_SEKOLAH'])
 def class_print_list_view(request, kelas_id):
     """
     Pusat Cetak Dokumen Rapor & Kover 1 Rombongan Belajar.

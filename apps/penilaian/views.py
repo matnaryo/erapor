@@ -24,9 +24,22 @@ def nilai_matrix_view(request):
     """
     ta_aktif = TahunAjaran.objects.filter(is_active=True).first()
     sem_aktif = Semester.objects.filter(is_active=True).first()
+    pendidik = getattr(request.user, 'profil_pendidik', None)
     
     kelas_id = request.GET.get('kelas')
     kelas_list = Kelas.objects.filter(tahun_ajaran=ta_aktif).order_by('tingkat', 'nama')
+
+    # Jika Guru Mapel, filter hanya kelas yang diajar oleh guru tersebut
+    if pendidik and pendidik.role == 'GURU_MAPEL':
+        ampu_kelas_ids = PembelajaranKelas.objects.filter(
+            guru_pengampu=pendidik,
+            semester=sem_aktif
+        ).values_list('kelas_id', flat=True).distinct()
+        if not ampu_kelas_ids.exists():
+            ampu_kelas_ids = PembelajaranKelas.objects.filter(
+                guru_pengampu=pendidik
+            ).values_list('kelas_id', flat=True).distinct()
+        kelas_list = kelas_list.filter(id__in=ampu_kelas_ids)
     
     selected_kelas = Kelas.objects.filter(id=kelas_id).first() if kelas_id else kelas_list.first()
 
@@ -34,11 +47,16 @@ def nilai_matrix_view(request):
     anggota_list = []
     if selected_kelas and sem_aktif:
         ensure_pembelajaran_kelas(selected_kelas, sem_aktif, selected_kelas.wali_kelas)
-        pembelajaran_list = PembelajaranKelas.objects.filter(
+        pembelajaran_qs = PembelajaranKelas.objects.filter(
             kelas=selected_kelas,
             semester=sem_aktif
         ).select_related('mata_pelajaran', 'guru_pengampu').order_by('mata_pelajaran__urutan')
         
+        # Untuk Guru Mapel, sembunyikan mata pelajaran yang tidak diampu
+        if pendidik and pendidik.role == 'GURU_MAPEL':
+            pembelajaran_qs = pembelajaran_qs.filter(guru_pengampu=pendidik)
+
+        pembelajaran_list = pembelajaran_qs
         anggota_list = AnggotaKelas.objects.filter(kelas=selected_kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
 
     context = {
@@ -69,6 +87,14 @@ def nilai_mupel_input_view(request, pembelajaran_id):
     fase = kelas.fase
     sem = pembelajaran.semester
     mupel = pembelajaran.mata_pelajaran
+
+    pendidik = getattr(request.user, 'profil_pendidik', None)
+
+    # Proteksi RBAC: Guru Mapel hanya dapat mengelola mupel yang diampu
+    if pendidik and pendidik.role == 'GURU_MAPEL':
+        if pembelajaran.guru_pengampu_id != pendidik.id:
+            messages.error(request, f"Akses ditolak: Anda tidak mengampu mata pelajaran {mupel.nama} di Kelas {kelas.nama}.")
+            return redirect('nilai_matrix')
 
     anggota_list = AnggotaKelas.objects.filter(kelas=kelas).select_related('murid').order_by('nomor_absen', 'murid__nama_lengkap')
     tp_descriptions = get_tp_descriptions(pembelajaran)
@@ -217,11 +243,16 @@ def nilai_mupel_input_view(request, pembelajaran_id):
             'tp_cells': tp_cells,
         })
 
-    # Pembelajaran lain di kelas ini untuk tabs switcher
-    daftar_mupel_kelas = PembelajaranKelas.objects.filter(
+    # Pembelajaran lain di kelas ini untuk tabs switcher (difilter untuk Guru Mapel)
+    daftar_mupel_qs = PembelajaranKelas.objects.filter(
         kelas=kelas,
         semester=sem
     ).select_related('mata_pelajaran').order_by('mata_pelajaran__urutan')
+
+    if pendidik and pendidik.role == 'GURU_MAPEL':
+        daftar_mupel_qs = daftar_mupel_qs.filter(guru_pengampu=pendidik)
+
+    daftar_mupel_kelas = daftar_mupel_qs
 
     context = {
         'pembelajaran': pembelajaran,
@@ -299,6 +330,7 @@ def api_generate_capaian_ai_view(request):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def kokurikuler_input_view(request, kelas_id):
     """
     Formulir input nilai Kokurikuler (aspek pembiasaan ibadah dan adab islami) per kelas.
@@ -426,6 +458,7 @@ def ekskul_prestasi_input_view(request, anggota_id):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def rekap_absen_input_view(request, kelas_id):
     """
     Formulir input Rekapitulasi Ketidakhadiran (Sakit, Izin, Alpa) per kelas.
@@ -479,6 +512,7 @@ def rekap_absen_input_view(request, kelas_id):
 
 
 @login_required(login_url='login')
+@role_required(['SUPERADMIN', 'KURIKULUM', 'WALI_KELAS'])
 def catatan_wali_input_view(request, kelas_id):
     """
     Formulir input Catatan Naratif Wali Kelas (Halaman 4 cetak rapor).

@@ -106,12 +106,14 @@
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Master Akademik</div>
           <div class="space-y-0.5">
+            {% if user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
             <a href="{% url 'kelas_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name == 'kelas_list' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">🏫</span> <span>Rombel / Kelas (1-6)</span>
             </a>
             <a href="{% url 'murid_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'murid_list murid_create murid_detail murid_update' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">🎓</span> <span>Buku Induk Murid</span>
             </a>
+            {% endif %}
             {% if user_role == 'SUPERADMIN' %}
             <a href="{% url 'admin:core_pendidik_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
               <span class="text-sm">👨‍🏫</span> <span>Data Pendidik (NIPY)</span>
@@ -141,6 +143,7 @@
           </div>
         </div>
 
+        {% if user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
         <!-- Grup: Tugas Khusus Wali Kelas -->
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tugas Khusus Wali Kelas</div>
@@ -179,6 +182,7 @@
             </a>
           </div>
         </div>
+        {% endif %}
 
         {% if user_role == 'SUPERADMIN' %}
         <!-- Grup: Sistem & Pengaturan (Superadmin) -->

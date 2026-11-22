@@ -70,3 +70,40 @@ class AuthAndDashboardTest(TestCase):
         response = self.client.get(reverse('logout'), follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Anda telah keluar')
+
+    def test_guru_mapel_menu_and_access_restrictions(self):
+        user_mapel = User.objects.create_user(
+            username='guru_mapel',
+            password='password123',
+            first_name='Ustadz Mapel'
+        )
+        Pendidik.objects.create(
+            user=user_mapel,
+            nama_lengkap='Ustadz Mapel, S.Pd.',
+            role='GURU_MAPEL'
+        )
+        self.client.login(username='guru_mapel', password='password123')
+        
+        # 1. Cek tampilan sidebar navigasi
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        html = dash_res.content.decode('utf-8')
+        
+        # Menu yang WAJIB disembunyikan untuk Guru Mapel
+        self.assertNotIn('Tugas Khusus Wali Kelas', html)
+        self.assertNotIn('Pusat Cetak Dokumen', html)
+        self.assertNotIn('Buku Induk Murid', html)
+        self.assertNotIn('Rombel / Kelas (1-6)', html)
+        
+        # Menu yang WAJIB tampil untuk Guru Mapel
+        self.assertIn('11 Mata Pelajaran', html)
+        self.assertIn('Tujuan Pembelajaran (TP)', html)
+        self.assertIn('Matriks Nilai Rapor', html)
+
+        # 2. Cek proteksi akses URL langsung
+        self.assertEqual(self.client.get(reverse('kelas_list')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('murid_list')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('kokurikuler_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('rekap_absen_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('catatan_wali_input', kwargs={'kelas_id': self.kelas.id})).status_code, 302)
+        self.assertEqual(self.client.get(reverse('class_print_list', kwargs={'kelas_id': self.kelas.id})).status_code, 302)

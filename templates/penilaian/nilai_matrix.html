@@ -19,7 +19,7 @@
             </select>
         </form>
 
-        {% if selected_kelas %}
+        {% if selected_kelas and user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
         <div class="flex flex-wrap gap-2 text-xs">
             <a href="{% url 'kokurikuler_input' kelas_id=selected_kelas.id %}" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-bold border border-blue-200 transition-colors">
                 Input Kokurikuler
@@ -40,7 +40,7 @@
         <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <div>
                 <h3 class="font-bold text-slate-800 text-base">
-                    11 Mata Pelajaran Resmi &bull; Kelas {{ selected_kelas.nama }}
+                    Mata Pelajaran &bull; Kelas {{ selected_kelas.nama }}
                 </h3>
                 <p class="text-xs text-slate-500">Klik 'Input / Kelola Nilai' untuk mengisi nilai akhir & capaian kompetensi.</p>
             </div>
@@ -95,6 +95,7 @@
         </div>
     </div>
 
+    {% if user_role != 'GURU_MAPEL' and user_role != 'PEMBINA_EKSKUL' %}
     <!-- Data Murid & Ekstrakurikuler / Prestasi Individual -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
@@ -134,6 +135,7 @@
             </table>
         </div>
     </div>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}
