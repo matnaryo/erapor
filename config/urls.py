@@ -15,6 +15,7 @@ urlpatterns = [
     path('penilaian/', include('apps.penilaian.urls')),
     path('ai-asisten/', include('apps.ai_assistant.urls')),
     path('cetak/', include('apps.printing.urls')),
+    path('excel/', include('apps.export_import.urls')),
 ]
 
 if settings.DEBUG:

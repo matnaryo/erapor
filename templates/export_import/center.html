@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Pusat Ekspor & Impor Excel - e-Rapor eLHaEs{% endblock %}
+
+{% block page_title %}Pusat Ekspor & Impor Excel{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Banner -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-xl p-6 text-white shadow-md">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
+                    OpenPyXL Native Engine
+                </span>
+                <h2 class="text-2xl font-black tracking-tight text-white">Integrasi Berkas Excel (.xlsx)</h2>
+                <p class="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
+                    Unduh format template resmi, lakukan pengisian nilai secara luring (offline), dan unggah kembali untuk disimpan secara instan ke pangkalan data e-Rapor eLHaEs.
+                </p>
+            </div>
+            {% if selected_kelas %}
+            <div class="flex items-center gap-2">
+                <a href="{% url 'download_leger' kelas_id=selected_kelas.id %}" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Unduh Leger Nilai Kelas {{ selected_kelas.nama }}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pilih Kelas -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <form method="get" class="flex flex-wrap items-center gap-3">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Rombel / Kelas:</label>
+            <select name="kelas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                {% for k in kelas_list %}
+                <option value="{{ k.id }}" {% if selected_kelas and selected_kelas.id == k.id %}selected{% endif %}>
+                    Kelas {{ k.nama }} (Wali Kelas: {{ k.wali_kelas.nama_lengkap }})
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Table of Subjects with Download Template & Import Form -->
+    {% if selected_kelas %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-base">Berkas Template & Impor Nilai Mata Pelajaran</h3>
+            <span class="text-xs text-slate-500 font-medium">Kelas {{ selected_kelas.nama }} &bull; Semester {{ sem_aktif.semester }}</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-4 w-28">Kategori</th>
+                        <th class="py-3 px-4">Nama Mata Pelajaran</th>
+                        <th class="py-3 px-4">Guru Pengampu</th>
+                        <th class="py-3 px-4 text-center w-36">Unduh Template</th>
+                        <th class="py-3 px-4 text-right w-64">Impor Berkas Excel</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in pembelajaran_list %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">{{ p.mata_pelajaran.urutan }}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-600">
+                            <span class="px-2 py-0.5 rounded font-semibold text-[11px]
+                                {% if p.mata_pelajaran.kategori == 'UMUM' %}bg-emerald-50 text-emerald-700
+                                {% elif p.mata_pelajaran.kategori == 'PILIHAN' %}bg-blue-50 text-blue-700
+                                {% else %}bg-amber-50 text-amber-700{% endif %}">
+                                {{ p.mata_pelajaran.kategori }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">{{ p.mata_pelajaran.nama }}</td>
+                        <td class="py-3 px-4 text-xs text-slate-600">{{ p.guru_pengampu.nama_lengkap }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <a href="{% url 'download_template' pembelajaran_id=p.id %}" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Template .xlsx
+                            </a>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <form action="{% url 'import_nilai' pembelajaran_id=p.id %}" method="post" enctype="multipart/form-data" class="flex items-center justify-end gap-2">
+                                {% csrf_token %}
+                                <input type="file" name="file_excel" accept=".xlsx" required class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 w-44">
+                                <button type="submit" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded text-xs font-bold transition-colors">
+                                    Unggah
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="py-8 text-center text-slate-400">Belum ada mata pelajaran untuk kelas ini.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

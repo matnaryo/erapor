@@ -74,6 +74,38 @@
 
       </div>
     </div>
+
+    {% if user.is_authenticated %}
+    <!-- Sub-Navbar Navigasi Modul -->
+    <nav class="bg-slate-950/70 border-t border-slate-800/80 px-4 sm:px-6 lg:px-8 overflow-x-auto">
+      <div class="flex items-center space-x-1 sm:space-x-2 py-2 text-xs font-semibold whitespace-nowrap">
+        <a href="{% url 'dashboard' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Dashboard
+        </a>
+        <a href="{% url 'murid_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Data Murid
+        </a>
+        <a href="{% url 'kelas_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Rombel Kelas
+        </a>
+        <a href="{% url 'mupel_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          11 Mata Pelajaran
+        </a>
+        <a href="{% url 'kktp_manage' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          KKTP Dinamis
+        </a>
+        <a href="{% url 'tp_list' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Tujuan Pembelajaran
+        </a>
+        <a href="{% url 'nilai_matrix' %}" class="px-3 py-1.5 rounded-lg text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 transition-colors">
+          Penilaian Rapor
+        </a>
+        <a href="{% url 'export_import_center' %}" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Ekspor/Impor Excel
+        </a>
+      </div>
+    </nav>
+    {% endif %}
   </header>
 
   <!-- Flash Messages -->
