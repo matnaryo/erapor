@@ -84,3 +84,20 @@ class Pendidik(models.Model):
 
     def __str__(self):
         return f"{self.nama_lengkap} ({self.get_role_display()})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Sinkronisasi otomatis flag superuser pada akun auth_user
+        if self.user:
+            needs_update = False
+            if self.role == 'SUPERADMIN':
+                if not self.user.is_superuser or not self.user.is_staff:
+                    self.user.is_superuser = True
+                    self.user.is_staff = True
+                    needs_update = True
+            else:
+                if self.user.is_superuser:
+                    self.user.is_superuser = False
+                    needs_update = True
+            if needs_update:
+                self.user.save(update_fields=['is_superuser', 'is_staff'])

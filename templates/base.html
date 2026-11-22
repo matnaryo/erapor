@@ -84,7 +84,7 @@
           </a>
         </div>
 
-        {% if user.is_superuser %}
+        {% if user_role == 'SUPERADMIN' %}
         <!-- Grup: Master Lembaga (Khusus Superadmin) -->
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Master Lembaga</div>
@@ -112,7 +112,7 @@
             <a href="{% url 'murid_list' %}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition {% if request.resolver_match.url_name in 'murid_list murid_create murid_detail murid_update' %}bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent{% endif %}">
               <span class="text-sm">🎓</span> <span>Buku Induk Murid</span>
             </a>
-            {% if user.is_superuser %}
+            {% if user_role == 'SUPERADMIN' %}
             <a href="{% url 'admin:core_pendidik_changelist' %}" target="_blank" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
               <span class="text-sm">👨‍🏫</span> <span>Data Pendidik (NIPY)</span>
             </a>
@@ -178,7 +178,7 @@
           </div>
         </div>
 
-        {% if user.is_superuser %}
+        {% if user_role == 'SUPERADMIN' %}
         <!-- Grup: Sistem & Pengaturan (Superadmin) -->
         <div>
           <div class="px-2 text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1">Sistem & Pengaturan</div>
@@ -244,7 +244,7 @@
           <div class="hidden sm:block text-right">
             <div class="text-xs font-bold text-slate-800 leading-tight">{{ profil_pendidik.nama_lengkap|default:user.username }}</div>
             <div class="text-[10px] mt-0.5">
-              {% if user.is_superuser or user_role == 'SUPERADMIN' %}
+              {% if user_role == 'SUPERADMIN' %}
                 <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">SUPERADMIN</span>
               {% elif user_role == 'WALI_KELAS' %}
                 <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Wali Kelas</span>

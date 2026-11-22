@@ -79,15 +79,15 @@ def dashboard_view(request):
     kelas_terpilih = None
     kelas_param = request.GET.get('kelas')
 
-    if user.is_superuser:
+    if pendidik and pendidik.role == 'WALI_KELAS':
+        kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik, tahun_ajaran=ta_aktif).first()
+        if not kelas_terpilih:
+            kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik).first()
+    elif user.is_superuser or (pendidik and pendidik.role == 'SUPERADMIN'):
         if kelas_param:
             kelas_terpilih = Kelas.objects.filter(id=kelas_param).first()
         if not kelas_terpilih:
             kelas_terpilih = Kelas.objects.filter(tahun_ajaran=ta_aktif).first() or Kelas.objects.first()
-    elif pendidik and pendidik.role == 'WALI_KELAS':
-        kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik, tahun_ajaran=ta_aktif).first()
-        if not kelas_terpilih:
-            kelas_terpilih = Kelas.objects.filter(wali_kelas=pendidik).first()
 
     if kelas_terpilih:
         anggota_list = AnggotaKelas.objects.filter(kelas=kelas_terpilih).select_related('murid').order_by('nomor_absen')
